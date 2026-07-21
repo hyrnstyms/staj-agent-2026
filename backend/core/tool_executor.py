@@ -118,19 +118,62 @@ class ToolExecutor:
         if tool_name in hr_tools:
             return hr_tools[tool_name]
 
-        # Kod / Git (Faz 3'te doldurulacak)
-        from mcp_servers.code_server import code_server as code_srv
+        # Kod / Git (Faz 3)
+        from mcp_servers.code_server import code_server
         code_tools = {
-            "code_run":                   code_srv.code_run,
-            "code_lint":                  code_srv.code_lint,
-            "git_status":                 code_srv.git_status,
-            "git_diff_preview":           code_srv.git_diff_preview,
-            "git_create_branch":          code_srv.git_create_branch,
-            "git_commit_and_push":        code_srv.git_commit_and_push,
-            "github_create_pull_request": code_srv.github_create_pull_request,
+            "code_run": lambda p: code_server.code_run(
+                code=p.get("code", ""),
+                language=p.get("language", "python")
+            ),
+            "code_lint": lambda p: code_server.code_lint(
+                code=p.get("code", ""),
+                language=p.get("language", "python")
+            ),
+            "git_status": lambda p: code_server.git_status(
+                repo_path=p.get("repo_path", "")
+            ),
+            "git_commit_and_push": lambda p: code_server.git_commit_and_push(
+                repo_path=p.get("repo_path", ""),
+                commit_message=p.get("commit_message", "")
+            ),
+            "github_create_pull_request": lambda p: code_server.github_create_pull_request(
+                repo_path=p.get("repo_path", ""),
+                title=p.get("title", ""),
+                body=p.get("body", "")
+            ),
         }
         if tool_name in code_tools:
             return code_tools[tool_name]
+
+        # Mail & Takvim (Faz 4)
+        from mcp_servers.mail_calendar_server import mail_calendar_server
+        mail_calendar_tools = {
+            "mail_read_inbox": lambda p: mail_calendar_server.mail_read_inbox(
+                count=p.get("count", 5)
+            ),
+            "mail_send": lambda p: mail_calendar_server.mail_send(
+                to=p.get("to", ""),
+                subject=p.get("subject", ""),
+                body=p.get("body", "")
+            ),
+            "mail_extract_meeting": lambda p: mail_calendar_server.mail_extract_meeting(
+                mail_id=p.get("mail_id", "")
+            ),
+            "calendar_list_events": lambda p: mail_calendar_server.calendar_list_events(
+                date=p.get("date", "bugün")
+            ),
+            "calendar_add_event": lambda p: mail_calendar_server.calendar_add_event(
+                title=p.get("title", ""),
+                date=p.get("date", ""),
+                time=p.get("time", ""),
+                duration_minutes=p.get("duration_minutes", 60)
+            ),
+            "calendar_delete_event": lambda p: mail_calendar_server.calendar_delete_event(
+                event_id=p.get("event_id", "")
+            ),
+        }
+        if tool_name in mail_calendar_tools:
+            return mail_calendar_tools[tool_name]
 
         # Uygulama (Faz 5'te doldurulacak)
         from mcp_servers.app_server import app_server

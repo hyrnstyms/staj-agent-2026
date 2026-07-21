@@ -56,6 +56,16 @@ class Settings(BaseSettings):
         ),
     )
 
+    # ── n8n / Entegrasyonlar ──────────────────────────────────────────────────
+    N8N_WEBHOOK_URL: str = Field(
+        default="http://localhost:5678/webhook/agent",
+        description="n8n üzerindeki ana webhook adresi (Mail/Takvim vb. otomasyonlar için)",
+    )
+    N8N_API_KEY: str = Field(
+        default="",
+        description="n8n webhook isteğini doğrulayan anahtar (Bearer Auth için opsiyonel)",
+    )
+
     # ── Dosya Sistemi Sandbox ─────────────────────────────────────────────────
     SANDBOX_ROOT: Path = Field(
         default=Path("sandbox"),
