@@ -1,0 +1,111 @@
+# ═══════════════════════════════════════════════════════════════
+#  local-agent — docker-compose.yml
+#  Servisler: ollama + backend
+#
+#  Başlatmak için:
+#    docker-compose up -d
+#
+#  Ollama modelini çekmek için (ilk kurulumda):
+#    docker-compose exec ollama ollama pull qwen2.5:3b-instruct
+#
+#  ⚠️  FAZ 1 KISITI: backend --workers 1 ile çalışır.
+#  In-memory onay ve hafıza state'i birden fazla worker'da çalışmaz.
+#  Redis/DB entegrasyonuna kadar bu kısıt geçerlidir.
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+
+  # ── Ollama (LLM Runtime) ───────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: local-agent-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # GPU desteği (NVIDIA):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── Backend (FastAPI) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: local-agent-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/sandbox:/app/sandbox
+      - ./backend/logs:/app/logs
+      - ./backend/local_agent.db:/app/local_agent.db
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b-instruct
+      - DATABASE_URL=sqlite:///./local_agent.db
+      - SANDBOX_ROOT=/app/sandbox
+      - LOG_FILE=/app/logs/agent.log
+      - LOG_LEVEL=INFO
+      # ⚠️ Üretimde güçlü bir API key kullanın
+      - API_KEY=dev-api-key-change-in-production
+      # ⚠️ FAZ 1 KISITI: 1'den fazla worker KULLANMAYIN
+      - WORKERS=1
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── n8n (Mail/Takvim/GitHub OAuth) — FAZ 4'te aktif edilecek ─
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   container_name: local-agent-n8n
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5678:5678"
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #     - ./n8n/workflows:/home/node/.n8n/workflows
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=admin
+  #     - N8N_BASIC_AUTH_PASSWORD=change-me
+  #     - WEBHOOK_URL=http://localhost:5678/
+
+  # ── PostgreSQL — İLERİ FAZ'da SQLite yerine geçecek ──────────
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: local-agent-postgres
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_USER=agent
+  #     - POSTGRES_PASSWORD=change-me
+  #     - POSTGRES_DB=local_agent
+
+volumes:
+  ollama_data:
+  # n8n_data:       # FAZ 4
+  # postgres_data:  # İleri faz

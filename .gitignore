@@ -1,0 +1,60 @@
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# ── Virtual Environments ──────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Ortam Dosyaları (SIR YÖNETIMI) ───────────────────────────
+# ⚠️ .env dosyası asla git'e eklenmemeli
+.env
+*.env
+!.env.example
+
+# ── Veritabanı ────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── Log Dosyaları ─────────────────────────────────────────────
+logs/
+*.log
+
+# ── Sandbox (kullanıcı dosyaları) ─────────────────────────────
+backend/sandbox/
+sandbox/
+
+# ── IDE ───────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Test/Coverage ─────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# ── Docker ────────────────────────────────────────────────────
+# docker-compose.override.yml  # Lokal override'lar için ayrı dosya
+
+# ── Tauri/Node ────────────────────────────────────────────────
+desktop-app/node_modules/
+desktop-app/src-tauri/target/
+desktop-app/dist/
