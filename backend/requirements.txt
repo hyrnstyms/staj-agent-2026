@@ -14,6 +14,10 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
 
+# Multimodal Upload (Faz 7)
+python-magic==0.4.27       # MIME tipi tespiti (magic byte analiz)
+ffmpeg-python==0.2.0       # Ses format dönüşümü (WebM → WAV, gerekirse)
+
 # Database
 sqlalchemy==2.0.35
 # psycopg2-binary==2.9.9  # PostgreSQL (future phase)

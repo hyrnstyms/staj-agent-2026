@@ -23,11 +23,14 @@ Worker Kısıtı:
 
 from __future__ import annotations
 
+import time
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -36,11 +39,13 @@ from api.websocket import router as ws_router
 from config import settings
 from core.agent import Agent
 from core.approval import approval_manager
-from core.logger import get_logger
+from core.logger import Timer, get_logger, log_tool_call
 from core.memory import conversation_memory
 from db.database import get_db, init_db
 from db.models import User
 from db.seed import seed_database
+from multimodal.stt import stt_transcribe
+from multimodal.vision import vision_describe
 
 logger = get_logger(__name__)
 
@@ -63,6 +68,13 @@ async def lifespan(app: FastAPI):
         seed_database()
     except Exception as exc:
         logger.warning(f"Seed atlandı: {exc}")
+
+    # MCP adapter'larını kaydet
+    try:
+        from mcp_servers.mcp_adapters import register_all_servers
+        register_all_servers()
+    except Exception as exc:
+        logger.warning(f"MCP adapter kaydı kısmen başarısız: {exc}")
 
     logger.info(
         f"Backend hazır — model: {settings.OLLAMA_MODEL} @ {settings.OLLAMA_BASE_URL}"
@@ -108,6 +120,10 @@ app.add_middleware(
 
 # WebSocket router
 app.include_router(ws_router)
+
+# MCP router
+from api.mcp_endpoint import router as mcp_router
+app.include_router(mcp_router)
 
 # Tekil agent örneği
 _agent = Agent()
@@ -192,6 +208,17 @@ class ApprovalResponse(BaseModel):
     decision: str
     tool_name: str
     message: str
+
+
+class UploadResponse(BaseModel):
+    """POST /upload yanıt gövdesi."""
+
+    success: bool
+    upload_type: str          # "audio" | "image"
+    result: str               # transkript veya görsel açıklaması
+    mime_type: str
+    size_bytes: int
+    message: str | None = None
 
 
 class HealthResponse(BaseModel):
@@ -405,3 +432,248 @@ async def clear_session(
     """Bir oturumun konuşma geçmişini temizler."""
     conversation_memory.clear(session_id)
     return {"session_id": session_id, "cleared": True}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Multimodal Upload Endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+# İzin verilen MIME tipleri (gerçek içerik tipine göre — uzantıya güvenilmez)
+_AUDIO_MIMES = {"audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4"}
+_IMAGE_MIMES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+_ALLOWED_MIMES = _AUDIO_MIMES | _IMAGE_MIMES
+
+# MIME → uzantı eşlemesi (UUID dosya adı için)
+_MIME_EXT: dict[str, str] = {
+    "audio/webm": ".webm",
+    "audio/ogg": ".ogg",
+    "audio/wav": ".wav",
+    "audio/mpeg": ".mp3",
+    "audio/mp4": ".m4a",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+
+# Boyut sınırları (byte)
+_MAX_AUDIO_BYTES = 10 * 1024 * 1024  # 10 MB
+_MAX_IMAGE_BYTES = 5 * 1024 * 1024   # 5 MB
+
+# Yükleme klasörü TTL (saniye)
+_UPLOAD_TTL_SECONDS = 3600  # 1 saat
+
+
+def _get_upload_dir() -> Path:
+    """SANDBOX_ROOT/uploads/ dizinini döner, yoksa oluşturur."""
+    upload_dir = settings.SANDBOX_ROOT / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    return upload_dir
+
+
+def _cleanup_old_uploads() -> int:
+    """
+    1 saati aşan geçici yükleme dosyalarını siler.
+    Başlangıçta ve her yüklemede çağrılır.
+
+    Returns:
+        Silinen dosya sayısı.
+    """
+    upload_dir = _get_upload_dir()
+    cutoff = time.time() - _UPLOAD_TTL_SECONDS
+    deleted = 0
+    for f in upload_dir.iterdir():
+        if f.is_file() and f.stat().st_mtime < cutoff:
+            try:
+                f.unlink()
+                deleted += 1
+            except OSError:
+                pass
+    if deleted:
+        logger.info(f"Upload TTL temizliği: {deleted} dosya silindi")
+    return deleted
+
+
+def _detect_mime(data: bytes) -> str:
+    """
+    Dosya içeriğinden gerçek MIME tipini tespit eder.
+    python-magic varsa magic byte analizi yapar; yoksa Content-Type header'ına
+    fallback yapar (güvenlik notu belirtilir).
+    """
+    try:
+        import magic  # type: ignore
+        return magic.from_buffer(data[:2048], mime=True)
+    except ImportError:
+        logger.warning(
+            "python-magic yüklü değil — MIME tespiti Content-Type header'ına "
+            "fallback yapıyor. Güvenlik için 'pip install python-magic' çalıştırın."
+        )
+        return ""  # Caller fallback'i yönetir
+
+
+@app.post("/upload", response_model=UploadResponse, tags=["Multimodal"])
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """
+    Ses veya görsel dosyası yükler; STT/vision işlemi uygular.
+
+    Güvenlik:
+    - MIME tipi python-magic ile gerçek içerikten tespit edilir (uzantıya güvenilmez)
+    - Dosya adı: UUID4 tabanlı — orijinal ad ASLA kullanılmaz
+    - Kayıt: SANDBOX_ROOT/uploads/ — sandbox dışına çıkış yok
+    - Boyut: ses max 10MB, görsel max 5MB
+    - TTL: İşlem sonrası silinir; 1 saati aşan dosyalar temizlenir
+    - Her işlem tool_call_logs'a yazılır
+
+    Ses: WebM/Opus (MediaRecorder default), WAV, OGG, MP3 kabul edilir.
+    Görsel: JPEG, PNG, WebP, GIF kabul edilir.
+
+    Headers:
+        X-API-Key: API anahtarı (Faz 1 auth)
+    """
+    # Eski dosyaları temizle
+    _cleanup_old_uploads()
+
+    # Dosyayı belleğe oku (boyut kontrolü için)
+    raw_bytes = await file.read()
+    size_bytes = len(raw_bytes)
+
+    # MIME tespiti (magic bytes)
+    detected_mime = _detect_mime(raw_bytes)
+
+    # Fallback: python-magic yoksa Content-Type kullan
+    if not detected_mime:
+        detected_mime = (file.content_type or "").split(";")[0].strip().lower()
+
+    logger.info(
+        "POST /upload",
+        extra={
+            "user": current_user.email,
+            "size_bytes": size_bytes,
+            "detected_mime": detected_mime,
+            "original_filename": "[gizlendi — güvenlik]",
+        },
+    )
+
+    # MIME whitelist kontrolü
+    if detected_mime not in _ALLOWED_MIMES:
+        log_tool_call(
+            tool_name="upload",
+            parameters={"mime": detected_mime, "size": size_bytes},
+            status="error",
+            db=db,
+            category="gorsel_ses",
+            user_id=current_user.id,
+            error_message=f"İzin verilmeyen MIME tipi: {detected_mime}",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(
+                f"Desteklenmeyen dosya tipi: '{detected_mime}'. "
+                f"İzin verilenler: {sorted(_ALLOWED_MIMES)}"
+            ),
+        )
+
+    # Boyut sınırı kontrolü
+    is_audio = detected_mime in _AUDIO_MIMES
+    is_image = detected_mime in _IMAGE_MIMES
+    max_bytes = _MAX_AUDIO_BYTES if is_audio else _MAX_IMAGE_BYTES
+    upload_type = "audio" if is_audio else "image"
+
+    if size_bytes > max_bytes:
+        max_mb = max_bytes // (1024 * 1024)
+        log_tool_call(
+            tool_name="upload",
+            parameters={"mime": detected_mime, "size": size_bytes},
+            status="error",
+            db=db,
+            category="gorsel_ses",
+            user_id=current_user.id,
+            error_message=f"Dosya boyutu aşıldı: {size_bytes} > {max_bytes}",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"{upload_type.capitalize()} dosyası max {max_mb}MB olabilir.",
+        )
+
+    # UUID tabanlı güvenli dosya adıyla SANDBOX_ROOT/uploads/ altına kaydet
+    ext = _MIME_EXT.get(detected_mime, ".bin")
+    safe_filename = f"{uuid.uuid4()}{ext}"
+    upload_dir = _get_upload_dir()
+    save_path = upload_dir / safe_filename
+
+    # Path traversal kontrolü (teorik — UUID adı zaten güvenli, ama defense-in-depth)
+    try:
+        save_path.resolve().relative_to(settings.SANDBOX_ROOT.resolve())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Güvenlik ihlali: Hedef yol sandbox dışında.",
+        )
+
+    save_path.write_bytes(raw_bytes)
+
+    # STT veya Vision işlemi
+    result_text = ""
+    error_msg = None
+
+    with Timer() as t:
+        try:
+            if is_audio:
+                stt_result = stt_transcribe(str(save_path))
+                if stt_result["success"]:
+                    result_text = stt_result["text"]
+                else:
+                    error_msg = stt_result.get("error", "STT hatası")
+            else:  # image
+                # vision_describe sandbox-relative path bekler
+                rel_path = save_path.relative_to(settings.SANDBOX_ROOT)
+                vision_result = vision_describe(str(rel_path))
+                if vision_result["success"]:
+                    result_text = vision_result["description"]
+                else:
+                    error_msg = vision_result.get("error", "Vision hatası")
+        except Exception as exc:
+            logger.error(f"Upload işleme hatası: {exc}", exc_info=True)
+            error_msg = str(exc)
+        finally:
+            # İşlem bittikten sonra dosyayı sil (geçici)
+            try:
+                save_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    # Loglama
+    log_status = "success" if not error_msg else "error"
+    log_tool_call(
+        tool_name=f"upload_{upload_type}",
+        parameters={"mime": detected_mime, "size_bytes": size_bytes},
+        result={"text_length": len(result_text)} if result_text else None,
+        status=log_status,
+        db=db,
+        category="gorsel_ses",
+        user_id=current_user.id,
+        error_message=error_msg,
+        duration_ms=t.elapsed_ms,
+    )
+
+    if error_msg:
+        return UploadResponse(
+            success=False,
+            upload_type=upload_type,
+            result="",
+            mime_type=detected_mime,
+            size_bytes=size_bytes,
+            message=error_msg,
+        )
+
+    return UploadResponse(
+        success=True,
+        upload_type=upload_type,
+        result=result_text,
+        mime_type=detected_mime,
+        size_bytes=size_bytes,
+    )
