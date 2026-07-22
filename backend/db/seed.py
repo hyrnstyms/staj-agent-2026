@@ -152,6 +152,22 @@ PERMISSION_MATRIX: list[dict] = [
     {"role": "admin",    "tool_name": "app_open",         "allowed": True,  "requires_approval": False},
     {"role": "admin",    "tool_name": "app_close",        "allowed": True,  "requires_approval": False},
     {"role": "admin",    "tool_name": "app_list_running", "allowed": True,  "requires_approval": False},
+
+    # ── gorsel_ses ────────────────────────────────────────────────────────────
+    {"role": "employee", "tool_name": "stt_transcribe",  "allowed": True,  "requires_approval": False},
+    {"role": "employee", "tool_name": "tts_speak",       "allowed": True,  "requires_approval": False},
+    {"role": "employee", "tool_name": "vision_describe", "allowed": True,  "requires_approval": False},
+    {"role": "employee", "tool_name": "image_generate",  "allowed": True,  "requires_approval": True},
+
+    {"role": "hr",       "tool_name": "stt_transcribe",  "allowed": True,  "requires_approval": False},
+    {"role": "hr",       "tool_name": "tts_speak",       "allowed": True,  "requires_approval": False},
+    {"role": "hr",       "tool_name": "vision_describe", "allowed": True,  "requires_approval": False},
+    {"role": "hr",       "tool_name": "image_generate",  "allowed": False, "requires_approval": False},
+
+    {"role": "admin",    "tool_name": "stt_transcribe",  "allowed": True,  "requires_approval": False},
+    {"role": "admin",    "tool_name": "tts_speak",       "allowed": True,  "requires_approval": False},
+    {"role": "admin",    "tool_name": "vision_describe", "allowed": True,  "requires_approval": False},
+    {"role": "admin",    "tool_name": "image_generate",  "allowed": True,  "requires_approval": True},
 ]
 
 
@@ -231,14 +247,25 @@ def seed_database() -> None:
         else:
             print(f"⊙ Çalışanlar zaten mevcut ({existing_employees} kayıt), atlanıyor")
 
-        # ── Permission Matrisi ───────────────────────────────────────────────
-        existing_perms = db.query(Permission).count()
-        if existing_perms == 0:
-            permissions = [Permission(**p) for p in PERMISSION_MATRIX]
-            db.add_all(permissions)
-            print(f"✓ {len(permissions)} izin kuralı eklendi")
+        # ── Permission Matrisi (Upsert: eksik olanları ekle) ─────────────────────
+        added_count = 0
+        for perm_def in PERMISSION_MATRIX:
+            existing = (
+                db.query(Permission)
+                .filter(
+                    Permission.role == perm_def["role"],
+                    Permission.tool_name == perm_def["tool_name"],
+                )
+                .first()
+            )
+            if existing is None:
+                db.add(Permission(**perm_def))
+                added_count += 1
+
+        if added_count > 0:
+            print(f"✓ {added_count} yeni izin kuralı eklendi")
         else:
-            print(f"⊙ İzin kuralları zaten mevcut ({existing_perms} kayıt), atlanıyor")
+            print(f"⊙ İzin kuralları güncel ({db.query(Permission).count()} kayıt)")
 
         db.commit()
 

@@ -50,12 +50,13 @@ logger = get_logger(__name__)
 
 CATEGORIES: dict[str, str] = {
     "dosya":        "Dosya sistemi işlemleri: dosya okuma, yazma, silme, listeleme, taşıma",
-    "veritabani":   "Veritabanı işlemleri: kayıt sorgulama, ekleme, güncelleme, silme; çalışan/izin bilgileri",
+    "veritabani":   "Veritabanı işlemleri: tablo listeleme, kayıt sorgulama, ekleme, güncelleme, silme (genel tablolar)",
+    "hr_personel":  "Personel/çalışan bilgileri, izin bakiyesi sorgulama, izin talebi oluşturma, izin onaylama",
     "kod_git":      "Kod çalıştırma (sandbox), kod lint, git/GitHub işlemleri (status, commit, push, PR)",
     "mail_takvim":  "E-posta okuma/gönderme, takvim etkinliği listeleme/ekleme/silme",
-    "uygulama":     "Uygulama açma, kapatma, çalışan uygulamaları listeleme",
+    "uygulama":     "Uygulama açma (notepad, chrome vb.), kapatma, çalışan uygulamaları listeleme",
     "gorsel_ses":   "Ses transkripsiyonu (STT), metin-ses dönüşümü (TTS), görsel açıklama, görsel üretimi",
-    "genel_sohbet": "Dosya/veritabanı/kod/mail/takvim/uygulama/görsel gerektirmeyen soru ve sohbet",
+    "genel_sohbet": "Dosya/veritabanı/personel/kod/mail/takvim/uygulama/görsel gerektirmeyen soru ve sohbet",
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -189,6 +190,64 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
         {
             "type": "function",
             "function": {
+                "name": "db_insert",
+                "description": (
+                    "Tabloya yeni kayıt ekler. Onay gerektirir. "
+                    "Hassas tablolara (employees, leave_requests vb.) bu tool ile kayıt eklenemez."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "table":  {"type": "string", "description": "Hedef tablo"},
+                        "values": {"type": "object", "description": "Eklenecek değerler (sütun: değer)"},
+                    },
+                    "required": ["table", "values"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "db_update",
+                "description": (
+                    "ID ile mevcut kaydı günceller. Onay gerektirir. "
+                    "Hassas tablolara (leave_balances vb.) bu tool ile erişilemez."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "table":  {"type": "string",  "description": "Güncellenecek tablo"},
+                        "id":     {"type": "integer", "description": "Güncellenecek kaydın ID'si"},
+                        "values": {"type": "object",  "description": "Güncellenecek değerler (sütun: yeni_değer)"},
+                    },
+                    "required": ["table", "id", "values"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "db_delete",
+                "description": (
+                    "ID ile kaydı siler. Onay gerektirir. Silme geri alınamaz. "
+                    "Hassas tablolara (employees, leave_requests vb.) bu tool ile erişilemez."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "table": {"type": "string",  "description": "Silinecek kaydın bulunduğu tablo"},
+                        "id":    {"type": "integer", "description": "Silinecek kaydın ID'si"},
+                    },
+                    "required": ["table", "id"],
+                },
+            },
+        },
+    ],
+
+    "hr_personel": [
+        {
+            "type": "function",
+            "function": {
                 "name": "get_employee_leave_balance",
                 "description": (
                     "Çalışanın yıllık izin bakiyesini sorgular. "
@@ -243,9 +302,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
                 "name": "approve_leave",
                 "description": (
                     "Beklemedeki (pending) izin talebini onaylar. "
-                    "Sadece hr ve admin rolleri kullanabilir. "
-                    "Zaten onaylanmış/reddedilmiş talepler tekrar işlenemez. "
-                    "Onay gerektirir."
+                    "Sadece hr ve admin rolleri kullanabilir. Onay gerektirir."
                 ),
                 "parameters": {
                     "type": "object",
@@ -255,61 +312,6 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
                         "approver_name": {"type": "string",  "description": "Onaylayan kullanıcının adı"},
                     },
                     "required": ["request_id", "approver_role"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "db_insert",
-                "description": (
-                    "Tabloya yeni kayıt ekler. Onay gerektirir. "
-                    "Hassas tablolara (employees, leave_requests vb.) bu tool ile kayıt eklenemez."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "table":  {"type": "string", "description": "Hedef tablo"},
-                        "values": {"type": "object", "description": "Eklenecek değerler (sütun: değer)"},
-                    },
-                    "required": ["table", "values"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "db_update",
-                "description": (
-                    "ID ile mevcut kaydı günceller. Onay gerektirir. "
-                    "Hassas tablolara (leave_balances vb.) bu tool ile erişilemez."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "table":  {"type": "string",  "description": "Güncellenecek tablo"},
-                        "id":     {"type": "integer", "description": "Güncellenecek kaydın ID'si"},
-                        "values": {"type": "object",  "description": "Güncellenecek değerler (sütun: yeni_değer)"},
-                    },
-                    "required": ["table", "id", "values"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "db_delete",
-                "description": (
-                    "ID ile kaydı siler. Onay gerektirir. Silme geri alınamaz. "
-                    "Hassas tablolara (employees, leave_requests vb.) bu tool ile erişilemez."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "table": {"type": "string",  "description": "Silinecek kaydın bulunduğu tablo"},
-                        "id":    {"type": "integer", "description": "Silinecek kaydın ID'si"},
-                    },
-                    "required": ["table", "id"],
                 },
             },
         },
@@ -519,11 +521,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "app_open",
-                "description": "Belirtilen uygulamayı açar.",
+                "description": "Belirtilen uygulamayı açar (notepad, chrome, calculator, vscode vb.)",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "name": {"type": "string", "description": "Uygulama adı (örn: 'notepad', 'chrome')"}
+                        "name": {"type": "string", "description": "Uygulama adı (örn: 'notepad', 'chrome', 'calculator')"}
                     },
                     "required": ["name"],
                 },
@@ -533,7 +535,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "app_close",
-                "description": "Belirtilen uygulamayı kapatır.",
+                "description": "Belirtilen uygulamayı kapatır (taskkill).",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -547,7 +549,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "app_list_running",
-                "description": "Şu anda çalışan uygulamaları listeler.",
+                "description": "Şu anda çalışan uygulamaları listeler (whitelist ile eşleşenler).",
                 "parameters": {"type": "object", "properties": {}, "required": []},
             },
         },
