@@ -86,9 +86,9 @@ class MailCalendarServer:
         date_to: str | None = None,
     ) -> Dict[str, Any]:
         """Google Takvim'deki etkinlikleri listeler."""
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data: Dict[str, Any] = {
             "date_from": date_from or now.strftime("%Y-%m-%dT%H:%M:%S"),
             "date_to": date_to or (now + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S"),
