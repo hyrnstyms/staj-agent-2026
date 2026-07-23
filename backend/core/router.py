@@ -507,9 +507,9 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "id": {"type": "string", "description": "Silinecek etkinlik ID'si"}
+                        "event_id": {"type": "string", "description": "Silinecek etkinlik ID'si"}
                     },
-                    "required": ["id"],
+                    "required": ["event_id"],
                 },
             },
         },

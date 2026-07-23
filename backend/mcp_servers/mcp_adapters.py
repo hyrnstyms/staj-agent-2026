@@ -910,10 +910,12 @@ def register_all_servers() -> None:
     """
     Tüm MCP adapter'larını mcp_registry'ye kaydeder.
     FastAPI lifespan'da (api/main.py) bir kez çağrılır.
-    """
-    from mcp_servers.filesystem_server import FilesystemMcpServer as _FilesystemMcpServer
 
-    mcp_registry.register(_FilesystemMcpServer())
+    Not: FilesystemMcpServer bu dosyada (mcp_adapters.py) tanımlıdır.
+    mcp_servers/filesystem_server.py'deki FilesystemServer MCP base class'ını
+    extend etmez; doğrudan bu modüldeki adapter sınıfı kullanılır.
+    """
+    mcp_registry.register(FilesystemMcpServer())
     mcp_registry.register(DatabaseMcpServer())
     mcp_registry.register(HrMcpServer())
     mcp_registry.register(CodeGitMcpServer())

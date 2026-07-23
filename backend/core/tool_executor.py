@@ -43,13 +43,20 @@ logger = get_logger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 REQUIRES_APPROVAL = {
-    "db_delete",
-    "db_update",
-    "file_delete",
-    "file_move",
-    "github_create_pull_request",
+    # Dosya işlemleri
+    "file_write",           # Dosya oluşturma/üzerine yazma
+    "file_delete",          # Geri alınamaz silme
+    "file_move",            # Taşıma/yeniden adlandırma
+    # Veritabanı işlemleri
+    "db_insert",            # Yeni kayıt ekleme
+    "db_update",            # Kayıt güncelleme
+    "db_delete",            # Geri alınamaz silme
+    # Git / GitHub
     "git_commit_and_push",
+    "github_create_pull_request",
+    # HR
     "approve_leave",
+    # Mail & Takvim
     "mail_send",
     "calendar_add_event",
     "calendar_delete_event",
