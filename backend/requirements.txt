@@ -6,13 +6,17 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 websockets==13.0
 
-# HTTP Client (Ollama calls)
+# HTTP Client (Ollama calls + n8n)
 httpx==0.27.2
 
 # Configuration
 pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
+
+# ── Resmi MCP (Model Context Protocol) Python SDK ──────────────────────────
+# Anthropic'in resmi SDK — mcp.types.Tool, TextContent, CallToolResult
+mcp>=1.0.0
 
 # Multimodal Upload (Faz 7)
 python-magic==0.4.27       # MIME tipi tespiti (magic byte analiz)
@@ -21,6 +25,13 @@ ffmpeg-python==0.2.0       # Ses format dönüşümü (WebM → WAV, gerekirse)
 # Database
 sqlalchemy==2.0.35
 # psycopg2-binary==2.9.9  # PostgreSQL (future phase)
+
+# GitHub & Git entegrasyonu (Faz 3)
+gitpython==3.1.43
+PyGithub==2.4.0
+
+# Tarih/saat parse (mail_extract_meeting için)
+dateparser==1.2.0
 
 # Testing
 pytest==8.3.3

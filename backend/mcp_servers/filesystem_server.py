@@ -318,14 +318,19 @@ filesystem_server = FilesystemServer()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MCP Protocol Adapter
+# MCP Protocol Adapter — Resmi mcp SDK (mcp.types.Tool, CallToolResult)
 # ─────────────────────────────────────────────────────────────────────────────
 
-from core.mcp_protocol import McpServer, McpTool, McpInputProperty, McpInputSchema, McpToolResult, mcp_registry
+from core.mcp_protocol import McpServerBase
+from mcp.types import Tool, CallToolResult
 
 
-class FilesystemMcpServer(McpServer):
-    """FilesystemServer'ı MCP protokolüne adapte eden wrapper."""
+class FilesystemMcpServer(McpServerBase):
+    """
+    FilesystemServer'ı resmi mcp SDK tipleriyle MCP protokolüne adapte eder.
+    mcp_adapters.py'deki FilesystemMcpServer ile aynı işi yapar;
+    register_all_servers() bu versiyonu import eder.
+    """
 
     @property
     def server_name(self) -> str:
@@ -335,77 +340,95 @@ class FilesystemMcpServer(McpServer):
     def server_description(self) -> str:
         return "Sandbox içindeki dosya sistemi işlemleri: okuma, yazma, silme, listeleme, taşıma"
 
-    def list_tools(self) -> list[McpTool]:
+    def _define_tools(self) -> list[Tool]:
         return [
-            McpTool(
+            Tool(
                 name="file_read",
                 description="Sandbox içindeki bir dosyanın içeriğini okur.",
-                input_schema=McpInputSchema(
-                    properties={"path": McpInputProperty(type="string", description="Sandbox içindeki dosya yolu")},
-                    required=["path"],
-                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "path": {"type": "string", "description": "Sandbox içindeki dosya yolu"}
+                    },
+                    "required": ["path"],
+                },
             ),
-            McpTool(
+            Tool(
                 name="file_write",
                 description="Sandbox içine dosya oluşturur veya üzerine yazar. Onay gerektirir.",
-                input_schema=McpInputSchema(
-                    properties={
-                        "path":    McpInputProperty(type="string", description="Hedef dosya yolu"),
-                        "content": McpInputProperty(type="string", description="Yazılacak içerik"),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "path":    {"type": "string", "description": "Hedef dosya yolu"},
+                        "content": {"type": "string", "description": "Yazılacak içerik"},
                     },
-                    required=["path", "content"],
-                ),
+                    "required": ["path", "content"],
+                },
             ),
-            McpTool(
+            Tool(
                 name="file_delete",
-                description="Sandbox içindeki bir dosyayı siler. Onay gerektirir.",
-                input_schema=McpInputSchema(
-                    properties={"path": McpInputProperty(type="string", description="Silinecek dosya yolu")},
-                    required=["path"],
-                ),
+                description="Sandbox içindeki bir dosyayı siler. ⚠️ Geri alınamaz — onay gerektirir.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "path": {"type": "string", "description": "Silinecek dosya yolu"}
+                    },
+                    "required": ["path"],
+                },
             ),
-            McpTool(
+            Tool(
                 name="file_list",
                 description="Sandbox içindeki bir dizinin içeriğini listeler.",
-                input_schema=McpInputSchema(
-                    properties={"directory": McpInputProperty(type="string", description="Listelenecek dizin yolu (boş = kök)")},
-                    required=[],
-                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "directory": {
+                            "type": "string",
+                            "description": "Listelenecek dizin yolu (boş = sandbox kökü)",
+                        }
+                    },
+                    "required": [],
+                },
             ),
-            McpTool(
+            Tool(
                 name="file_move",
                 description="Sandbox içindeki bir dosyayı taşır veya yeniden adlandırır. Onay gerektirir.",
-                input_schema=McpInputSchema(
-                    properties={
-                        "src": McpInputProperty(type="string", description="Kaynak yol"),
-                        "dst": McpInputProperty(type="string", description="Hedef yol"),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "src": {"type": "string", "description": "Kaynak yol"},
+                        "dst": {"type": "string", "description": "Hedef yol"},
                     },
-                    required=["src", "dst"],
-                ),
+                    "required": ["src", "dst"],
+                },
             ),
         ]
 
-    async def call_tool(self, name: str, arguments: dict) -> McpToolResult:
+    async def call_tool(self, name: str, arguments: dict) -> CallToolResult:
         try:
             if name == "file_read":
-                result = filesystem_server.file_read(arguments["path"])
-                return McpToolResult.success(result)
+                return self.success(filesystem_server.file_read(arguments["path"]))
             elif name == "file_write":
-                result = filesystem_server.file_write(arguments["path"], arguments["content"])
-                return McpToolResult.success(result)
+                return self.success(
+                    filesystem_server.file_write(arguments["path"], arguments["content"])
+                )
             elif name == "file_delete":
-                result = filesystem_server.file_delete(arguments["path"])
-                return McpToolResult.success(result)
+                return self.success(filesystem_server.file_delete(arguments["path"]))
             elif name == "file_list":
-                result = filesystem_server.file_list(arguments.get("directory", ""))
-                return McpToolResult.success(result)
+                return self.success(
+                    filesystem_server.file_list(arguments.get("directory", ""))
+                )
             elif name == "file_move":
-                result = filesystem_server.file_move(arguments["src"], arguments["dst"])
-                return McpToolResult.success(result)
+                return self.success(
+                    filesystem_server.file_move(arguments["src"], arguments["dst"])
+                )
             else:
-                return McpToolResult.error(f"Bilinmeyen tool: {name}")
+                return self.error(f"Bilinmeyen tool: {name}")
         except Exception as exc:
-            return McpToolResult.error(str(exc))
+            return self.error(str(exc))
 
 
 # FilesystemMcpServer — register_all_servers() tarafından kaydedilir
+
+
+# FilesystemMcpServer — register_all_servers() (mcp_adapters.py) tarafından kaydedilir.

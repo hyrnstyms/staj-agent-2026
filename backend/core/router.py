@@ -491,12 +491,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "title":        {"type": "string", "description": "Etkinlik başlığı"},
-                        "date":         {"type": "string", "description": "Tarih (YYYY-MM-DD)"},
-                        "time":         {"type": "string", "description": "Saat (HH:MM)"},
-                        "meeting_link": {"type": "string", "description": "Toplantı linki (opsiyonel)"},
+                        "title": {"type": "string", "description": "Etkinlik başlığı"},
+                        "start": {"type": "string", "description": "Başlangıç zamanı ISO 8601 formatında (örn: 2026-08-01T14:00:00)"},
+                        "end":   {"type": "string", "description": "Bitiş zamanı ISO 8601 formatında (örn: 2026-08-01T15:00:00)"},
                     },
-                    "required": ["title", "date", "time"],
+                    "required": ["title", "start", "end"],
                 },
             },
         },

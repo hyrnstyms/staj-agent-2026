@@ -1,136 +1,109 @@
 """
 core/mcp_protocol.py
 --------------------
-Anthropic MCP (Model Context Protocol) uyumlu tool interface.
+Resmi MCP (Model Context Protocol) Python SDK entegrasyonu.
 
-Her MCP server'ın implement etmesi gereken:
-    - list_tools()  → Standart MCP tool schema listesi döner
-    - call_tool()   → Tool çalıştırır, MCP formatında sonuç döner
+Anthropic'in resmi `mcp` paketi (pip install mcp>=1.0.0) kullanılır.
+mcp.types modülündeki resmi tipler (Tool, TextContent, CallToolResult)
+bu modül aracılığıyla projeye dahil edilir.
 
-Bu modül ayrıca MCP JSON-RPC mesaj formatlarını tanımlar.
-FastAPI endpoint'i (api/mcp_endpoint.py) bu protokolü HTTP üzerinden açar.
+Mimari (Embedded MCP):
+    Her MCP server McpServerBase sınıfını extend eder.
+    FastAPI HTTP endpoint'i doğrudan handler fonksiyonlarını çağırır.
+    Bu "embedded" yaklaşımda her server ayrı process yerine FastAPI
+    içinde async olarak çalışır — stdio/SSE transport kullanılmaz.
+
+    Dışa açılan HTTP endpoint'ler (api/mcp_endpoint.py) aracılığıyla
+    Claude Desktop ve diğer MCP istemcileri sisteme bağlanabilir.
 
 Protokol referansı: https://spec.modelcontextprotocol.io/
+SDK:               https://github.com/modelcontextprotocol/python-sdk
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resmi MCP SDK tiplerini import et
+# ─────────────────────────────────────────────────────────────────────────────
+
+from mcp.types import (
+    CallToolResult,
+    TextContent,
+    Tool,
+)
+
+# Proje genelinde kullanılabilmesi için re-export
+__all__ = [
+    "Tool",
+    "TextContent",
+    "CallToolResult",
+    "McpServerBase",
+    "McpRegistry",
+    "mcp_registry",
+]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MCP Tool Schema Tipleri
+# McpServerBase — Her MCP server'ın implement etmesi gereken soyut sınıf
 # ─────────────────────────────────────────────────────────────────────────────
 
-@dataclass
-class McpInputProperty:
-    """Bir tool parametresinin JSON Schema tanımı."""
-    type: str                          # "string" | "integer" | "boolean" | "number"
-    description: str
-    enum: list[str] | None = None      # İzin verilen değerler (varsa)
-    default: Any = None
 
-
-@dataclass
-class McpInputSchema:
-    """Tool'un giriş parametreleri şeması (JSON Schema subset)."""
-    type: Literal["object"] = "object"
-    properties: dict[str, McpInputProperty] = field(default_factory=dict)
-    required: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict:
-        props = {}
-        for name, prop in self.properties.items():
-            p: dict[str, Any] = {"type": prop.type, "description": prop.description}
-            if prop.enum:
-                p["enum"] = prop.enum
-            if prop.default is not None:
-                p["default"] = prop.default
-            props[name] = p
-        return {
-            "type": self.type,
-            "properties": props,
-            "required": self.required,
-        }
-
-
-@dataclass
-class McpTool:
-    """Tek bir MCP tool tanımı."""
-    name: str
-    description: str
-    input_schema: McpInputSchema
-
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "description": self.description,
-            "inputSchema": self.input_schema.to_dict(),
-        }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MCP İçerik Tipleri (tool sonucu)
-# ─────────────────────────────────────────────────────────────────────────────
-
-@dataclass
-class McpTextContent:
-    text: str
-    type: Literal["text"] = "text"
-
-    def to_dict(self) -> dict:
-        return {"type": self.type, "text": self.text}
-
-
-@dataclass
-class McpToolResult:
-    """Tool çalıştırma sonucu — MCP formatında."""
-    content: list[McpTextContent]
-    is_error: bool = False
-
-    def to_dict(self) -> dict:
-        return {
-            "content": [c.to_dict() for c in self.content],
-            "isError": self.is_error,
-        }
-
-    @classmethod
-    def success(cls, text: str) -> "McpToolResult":
-        import json
-        # dict/list ise JSON string'e çevir
-        if not isinstance(text, str):
-            text = json.dumps(text, ensure_ascii=False, default=str)
-        return cls(content=[McpTextContent(text=text)])
-
-    @classmethod
-    def error(cls, message: str) -> "McpToolResult":
-        return cls(content=[McpTextContent(text=message)], is_error=True)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MCP Server Base Sınıfı
-# ─────────────────────────────────────────────────────────────────────────────
-
-class McpServer(ABC):
+class McpServerBase(ABC):
     """
-    Her MCP server'ın implement etmesi gereken soyut sınıf.
+    Resmi mcp SDK tipleri kullanan MCP server base sınıfı.
+
+    Subclass'lar şunları implement etmelidir:
+        - server_name        → str
+        - server_description → str
+        - _define_tools()    → list[Tool]      (static, __init__'te çağrılır)
+        - call_tool()        → CallToolResult  (async, gerçek I/O yapar)
 
     Kullanım:
-        class FilesystemServer(McpServer):
-            def list_tools(self) -> list[McpTool]:
-                return [McpTool(name="file_read", ...)]
+        class FilesystemMcpServer(McpServerBase):
 
-            async def call_tool(self, name: str, arguments: dict) -> McpToolResult:
+            @property
+            def server_name(self) -> str:
+                return "filesystem"
+
+            @property
+            def server_description(self) -> str:
+                return "Dosya sistemi işlemleri"
+
+            def _define_tools(self) -> list[Tool]:
+                return [
+                    Tool(
+                        name="file_read",
+                        description="Dosya içeriğini okur.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string", "description": "Dosya yolu"}
+                            },
+                            "required": ["path"],
+                        },
+                    )
+                ]
+
+            async def call_tool(self, name: str, arguments: dict) -> CallToolResult:
                 if name == "file_read":
-                    ...
+                    content = fs.file_read(arguments["path"])
+                    return self.success(content)
+                return self.error(f"Bilinmeyen tool: {name}")
     """
+
+    def __init__(self) -> None:
+        # Tool listesi static — init'te bir kez hesaplanır, cache'lenir
+        self._tools: list[Tool] = self._define_tools()
+
+    # ── Soyut özellikler ────────────────────────────────────────────────────
 
     @property
     @abstractmethod
     def server_name(self) -> str:
-        """Server kimliği — örn: "filesystem", "database" """
+        """Server kimliği — örn: 'filesystem', 'database'"""
 
     @property
     @abstractmethod
@@ -138,60 +111,111 @@ class McpServer(ABC):
         """Server'ın ne yaptığının kısa açıklaması."""
 
     @abstractmethod
-    def list_tools(self) -> list[McpTool]:
-        """Bu server'ın sunduğu tool listesini döner."""
+    def _define_tools(self) -> list[Tool]:
+        """
+        Bu server'ın sunduğu tool listesini tanımlar.
+        Static veriler döner — init'te bir kez çağrılır.
+        mcp.types.Tool nesneleri kullanılır.
+        """
 
     @abstractmethod
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> McpToolResult:
-        """Verilen tool'u çalıştırır ve MCP formatında sonuç döner."""
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> CallToolResult:
+        """
+        Verilen tool'u çalıştırır.
+        mcp.types.CallToolResult döner.
+        Hata durumunda self.error() yardımcısı kullanılır.
+        """
 
-    def get_tool(self, name: str) -> McpTool | None:
+    # ── Mevcut tool'ları sorgulama ──────────────────────────────────────────
+
+    def list_tools(self) -> list[Tool]:
+        """Bu server'ın sunduğu mcp.types.Tool listesini döner (cache'lenmiş)."""
+        return self._tools
+
+    def get_tool(self, name: str) -> Tool | None:
         """İsme göre tek tool döner."""
-        return next((t for t in self.list_tools() if t.name == name), None)
+        return next((t for t in self._tools if t.name == name), None)
+
+    # ── Sonuç yardımcıları ──────────────────────────────────────────────────
+
+    @staticmethod
+    def success(data: Any) -> CallToolResult:
+        """
+        Başarılı tool sonucu oluşturur.
+        dict/list → JSON string'e otomatik çevrilir.
+        """
+        import json
+
+        if not isinstance(data, str):
+            data = json.dumps(data, ensure_ascii=False, default=str)
+        return CallToolResult(content=[TextContent(type="text", text=data)])
+
+    @staticmethod
+    def error(message: str) -> CallToolResult:
+        """Hata sonucu oluşturur (isError=True)."""
+        return CallToolResult(
+            content=[TextContent(type="text", text=message)],
+            isError=True,
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MCP Registry — Tüm server'ları merkezi kayıt
+# McpRegistry — Tüm server'ları merkezi kayıt
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class McpRegistry:
     """
-    Tüm aktif MCP server'ları tutar.
-    FastAPI endpoint'i ve tool_executor bu kayıttan server'ları bulur.
+    Tüm aktif MCP server'ları merkezi olarak tutar.
+    FastAPI endpoint'i (api/mcp_endpoint.py) ve tool_executor bu
+    kayıttan server'ları bulup çağırır.
     """
 
     def __init__(self) -> None:
-        self._servers: dict[str, McpServer] = {}
+        self._servers: dict[str, McpServerBase] = {}
 
-    def register(self, server: McpServer) -> None:
-        """Server'ı kaydet."""
+    def register(self, server: McpServerBase) -> None:
+        """Bir MCP server'ı kayıt altına alır."""
         self._servers[server.server_name] = server
 
-    def get_server(self, name: str) -> McpServer | None:
+    def get_server(self, name: str) -> McpServerBase | None:
+        """İsme göre server döner."""
         return self._servers.get(name)
 
-    def all_servers(self) -> list[McpServer]:
+    def all_servers(self) -> list[McpServerBase]:
+        """Kayıtlı tüm server'ların listesini döner."""
         return list(self._servers.values())
 
     def all_tools(self) -> list[dict]:
-        """Tüm server'lardan tool listesi — FastAPI /mcp/tools için."""
+        """
+        Tüm server'lardan tool şemalarını birleştirir.
+        FastAPI GET /mcp/tools endpoint'i bu metodu kullanır.
+        Tool dict'lerine '_server' anahtarı eklenir.
+        """
         tools = []
         for server in self._servers.values():
             for tool in server.list_tools():
-                entry = tool.to_dict()
-                entry["_server"] = server.server_name  # Hangi server'dan geldiği
+                entry = tool.model_dump()
+                entry["_server"] = server.server_name
                 tools.append(entry)
         return tools
 
     async def call_tool(
         self, tool_name: str, arguments: dict[str, Any]
-    ) -> McpToolResult:
-        """Tool adından doğru server'ı bulup çalıştırır."""
+    ) -> CallToolResult:
+        """
+        Tool adından doğru server'ı bulup async olarak çalıştırır.
+        Tool bulunamazsa isError=True döner.
+        """
         for server in self._servers.values():
             if server.get_tool(tool_name) is not None:
                 return await server.call_tool(tool_name, arguments)
-        return McpToolResult.error(f"Tool bulunamadı: '{tool_name}'")
+
+        return CallToolResult(
+            content=[TextContent(type="text", text=f"Tool bulunamadı: '{tool_name}'")],
+            isError=True,
+        )
 
 
-# Tekil global registry örneği
+# Tekil global registry örneği — tüm proje bu nesneyi kullanır
 mcp_registry = McpRegistry()

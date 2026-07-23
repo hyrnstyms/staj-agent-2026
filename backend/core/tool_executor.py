@@ -185,13 +185,13 @@ class ToolExecutor:
                 mail_id=p.get("mail_id", ""),
             ),
             "calendar_list_events": lambda p: mail_calendar_server.calendar_list_events(
-                date=p.get("date", "bugün"),
+                date_from=p.get("date_from"),
+                date_to=p.get("date_to"),
             ),
             "calendar_add_event": lambda p: mail_calendar_server.calendar_add_event(
                 title=p.get("title", ""),
-                date=p.get("date", ""),
-                time=p.get("time", ""),
-                duration_minutes=p.get("duration_minutes", 60),
+                start=p.get("start", ""),
+                end=p.get("end", ""),
             ),
             "calendar_delete_event": lambda p: mail_calendar_server.calendar_delete_event(
                 event_id=p.get("event_id", ""),

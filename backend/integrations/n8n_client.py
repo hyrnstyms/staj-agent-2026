@@ -41,7 +41,7 @@ async def n8n_call(action: str, data: dict[str, Any]) -> dict[str, Any]:
     if settings.N8N_API_KEY:
         headers["Authorization"] = f"Bearer {settings.N8N_API_KEY}"
 
-    payload = {"action": action, "data": data}
+    payload = {"action": action, **data}
 
     logger.info(f"n8n çağrısı: {action}", extra={"webhook": webhook_url})
 
