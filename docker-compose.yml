@@ -75,21 +75,21 @@ services:
       retries: 3
       start_period: 15s
 
-  # ── n8n (Mail/Takvim/GitHub OAuth) — FAZ 4'te aktif edilecek ─
-  # n8n:
-  #   image: n8nio/n8n:latest
-  #   container_name: local-agent-n8n
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5678:5678"
-  #   volumes:
-  #     - n8n_data:/home/node/.n8n
-  #     - ./n8n/workflows:/home/node/.n8n/workflows
-  #   environment:
-  #     - N8N_BASIC_AUTH_ACTIVE=true
-  #     - N8N_BASIC_AUTH_USER=admin
-  #     - N8N_BASIC_AUTH_PASSWORD=change-me
-  #     - WEBHOOK_URL=http://localhost:5678/
+  # ── n8n (Mail/Takvim/GitHub OAuth) ──────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: local-agent-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=change-me
+      - WEBHOOK_URL=http://localhost:5678/
 
   # ── PostgreSQL — İLERİ FAZ'da SQLite yerine geçecek ──────────
   # postgres:
@@ -107,5 +107,5 @@ services:
 
 volumes:
   ollama_data:
-  # n8n_data:       # FAZ 4
+  n8n_data:
   # postgres_data:  # İleri faz

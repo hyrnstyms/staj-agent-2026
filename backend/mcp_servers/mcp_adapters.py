@@ -481,6 +481,109 @@ class AppMcpServer(McpServer):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Multimodal MCP Adapter (Faz 6)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class MultimodalMcpServer(McpServer):
+    @property
+    def server_name(self) -> str:
+        return "multimodal"
+
+    @property
+    def server_description(self) -> str:
+        return "Ses tanıma (STT), metin-ses (TTS), görsel açıklama (Vision) ve görsel üretimi (Image Gen)"
+
+    def list_tools(self) -> list[McpTool]:
+        return [
+            McpTool(
+                name="stt_transcribe",
+                description="Ses dosyasını metne çevirir (Whisper STT).",
+                input_schema=McpInputSchema(
+                    properties={
+                        "audio_path": McpInputProperty(
+                            type="string",
+                            description="Ses dosyasının yolu (.wav, .mp3, .ogg)",
+                        ),
+                    },
+                    required=["audio_path"],
+                ),
+            ),
+            McpTool(
+                name="tts_speak",
+                description="Metni sese çevirir ve WAV dosyası olarak kaydeder.",
+                input_schema=McpInputSchema(
+                    properties={
+                        "text": McpInputProperty(
+                            type="string",
+                            description="Sese çevrilecek metin",
+                        ),
+                        "output_path": McpInputProperty(
+                            type="string",
+                            description="Çıktı dosya yolu (opsiyonel, boş ise geçici dosya)",
+                        ),
+                    },
+                    required=["text"],
+                ),
+            ),
+            McpTool(
+                name="vision_describe",
+                description="Görsel dosyasını doğal dil açıklamasına çevirir (Ollama Vision).",
+                input_schema=McpInputSchema(
+                    properties={
+                        "image_path": McpInputProperty(
+                            type="string",
+                            description="Görsel dosyasının yolu (sandbox içinde, .jpg/.png/.webp)",
+                        ),
+                    },
+                    required=["image_path"],
+                ),
+            ),
+            McpTool(
+                name="image_generate",
+                description="Metin açıklamasından görsel üretir (Stable Diffusion).",
+                input_schema=McpInputSchema(
+                    properties={
+                        "prompt": McpInputProperty(
+                            type="string",
+                            description="Görsel açıklaması (İngilizce önerilir)",
+                        ),
+                        "output_path": McpInputProperty(
+                            type="string",
+                            description="Çıktı dosya yolu (opsiyonel)",
+                        ),
+                    },
+                    required=["prompt"],
+                ),
+            ),
+        ]
+
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> McpToolResult:
+        try:
+            if name == "stt_transcribe":
+                from multimodal.stt import stt_transcribe
+                return McpToolResult.success(stt_transcribe(arguments["audio_path"]))
+            elif name == "tts_speak":
+                from multimodal.tts import tts_speak
+                return McpToolResult.success(tts_speak(
+                    arguments["text"],
+                    arguments.get("output_path"),
+                ))
+            elif name == "vision_describe":
+                from multimodal.vision import vision_describe
+                return McpToolResult.success(vision_describe(arguments["image_path"]))
+            elif name == "image_generate":
+                from multimodal.image_gen import image_generate
+                return McpToolResult.success(image_generate(
+                    arguments["prompt"],
+                    arguments.get("output_path"),
+                ))
+            else:
+                return McpToolResult.error(f"Bilinmeyen tool: {name}")
+        except Exception as exc:
+            return McpToolResult.error(str(exc))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Tüm adapter'ları kaydet
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -488,15 +591,17 @@ def register_all_servers() -> None:
     """
     Tüm MCP adapter'larını mcp_registry'ye kaydeder.
     FastAPI lifespan'da bir kez çağrılır.
-    FilesystemMcpServer filesystem_server.py sonunda zaten kayıtlı —
-    diğerleri burada eklenir.
     """
+    from mcp_servers.filesystem_server import FilesystemMcpServer
+    mcp_registry.register(FilesystemMcpServer())
     mcp_registry.register(DatabaseMcpServer())
     mcp_registry.register(HrMcpServer())
     mcp_registry.register(CodeGitMcpServer())
     mcp_registry.register(MailCalendarMcpServer())
     mcp_registry.register(AppMcpServer())
+    mcp_registry.register(MultimodalMcpServer())
     logger.info(
         "MCP registry hazır",
         extra={"servers": [s.server_name for s in mcp_registry.all_servers()]},
     )
+

@@ -1,0 +1,184 @@
+{
+  "name": "Asistan — Calendar Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "agent",
+      "parameters_full": {
+        "path": "agent",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "startsWith",
+              "value2": "calendar_"
+            }
+          ]
+        }
+      },
+      "id": "calendar-filter",
+      "name": "Calendar Action Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "output": 0,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "calendar_list_events"}]
+              }
+            },
+            {
+              "output": 1,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "calendar_add_event"}]
+              }
+            },
+            {
+              "output": 2,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "calendar_delete_event"}]
+              }
+            }
+          ]
+        }
+      },
+      "id": "action-router",
+      "name": "Calendar Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "options": {
+          "timeMin": "={{ $json.data.date || new Date().toISOString().split('T')[0] }}T00:00:00Z",
+          "timeMax": "={{ $json.data.date || new Date().toISOString().split('T')[0] }}T23:59:59Z"
+        }
+      },
+      "id": "gcal-list",
+      "name": "Google Calendar — List Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [950, 160],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GCAL_CREDENTIAL_ID",
+          "name": "Google Calendar - Asistan"
+        }
+      },
+      "notes": "Google Calendar OAuth2 credential'ınızı n8n'de oluşturup ID'sini buraya yazın."
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "calendarId": "primary",
+        "start": "={{ $json.data.date }}T{{ $json.data.time }}:00",
+        "end": "={{ (() => { const d = new Date($json.data.date + 'T' + $json.data.time + ':00'); d.setMinutes(d.getMinutes() + ($json.data.duration_minutes || 60)); return d.toISOString(); })() }}",
+        "additionalFields": {
+          "summary": "={{ $json.data.title }}"
+        }
+      },
+      "id": "gcal-create",
+      "name": "Google Calendar — Create Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [950, 340],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GCAL_CREDENTIAL_ID",
+          "name": "Google Calendar - Asistan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendarId": "primary",
+        "eventId": "={{ $json.data.event_id }}"
+      },
+      "id": "gcal-delete",
+      "name": "Google Calendar — Delete Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [950, 520],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GCAL_CREDENTIAL_ID",
+          "name": "Google Calendar - Asistan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: $json }) }}"
+      },
+      "id": "respond-success",
+      "name": "Respond — Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Bu action calendar workflow tarafından işlenmiyor.' }) }}"
+      },
+      "id": "respond-not-calendar",
+      "name": "Respond — Not Calendar",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [700, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Calendar Action Filter", "type": "main", "index": 0}]]
+    },
+    "Calendar Action Filter": {
+      "main": [
+        [{"node": "Calendar Router", "type": "main", "index": 0}],
+        [{"node": "Respond — Not Calendar", "type": "main", "index": 0}]
+      ]
+    },
+    "Calendar Router": {
+      "main": [
+        [{"node": "Google Calendar — List Events", "type": "main", "index": 0}],
+        [{"node": "Google Calendar — Create Event", "type": "main", "index": 0}],
+        [{"node": "Google Calendar — Delete Event", "type": "main", "index": 0}]
+      ]
+    },
+    "Google Calendar — List Events":  {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]},
+    "Google Calendar — Create Event":  {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]},
+    "Google Calendar — Delete Event":  {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{"name": "asistan"}, {"name": "calendar"}],
+  "pinData": {},
+  "meta": {
+    "instanceId": "local-agent",
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,38 @@ async def verify_api_key(
 
     Returns:
         Doğrulanmış User nesnesi
+=======
+"""
+api/auth.py
+-----------
+MCP endpoint'leri için ayrı auth bağımlılığı.
+
+api/main.py'deki verify_api_key fonksiyonu User nesnesi döner,
+ancak MCP endpoint'leri sadece API key doğrulaması gerektirir.
+Bu modül MCP router'ın import edebileceği hafif bir doğrulama sağlar.
+"""
+
+from __future__ import annotations
+
+from fastapi import Header, HTTPException, status
+
+from config import settings
+
+
+async def verify_api_key(
+    x_api_key: str | None = Header(default=None),
+) -> str:
+    """
+    X-API-Key header'ını doğrular ve key'i string olarak döner.
+
+    MCP endpoint'leri User nesnesi gerektirmez — sadece geçerli key yeterli.
+
+    Returns:
+        Doğrulanmış API key string'i.
+
+    Raises:
+        HTTPException 401: Key eksik veya geçersiz.
+>>>>>>> 503cec5 (mcp entegrasyonu)
     """
     if x_api_key is None:
         raise HTTPException(
@@ -27,6 +60,7 @@ async def verify_api_key(
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
+<<<<<<< HEAD
     # Geliştirme API key'i kontrolü
     if x_api_key == settings.API_KEY:
         # Demo: admin user'ı bul veya oluştur
@@ -43,3 +77,13 @@ async def verify_api_key(
         detail="Geçersiz API key.",
         headers={"WWW-Authenticate": "ApiKey"},
     )
+=======
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Geçersiz API key.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    return x_api_key
+>>>>>>> 503cec5 (mcp entegrasyonu)

@@ -408,5 +408,4 @@ class FilesystemMcpServer(McpServer):
             return McpToolResult.error(str(exc))
 
 
-# Registry'ye kaydet
-mcp_registry.register(FilesystemMcpServer())
+# FilesystemMcpServer — register_all_servers() tarafından kaydedilir

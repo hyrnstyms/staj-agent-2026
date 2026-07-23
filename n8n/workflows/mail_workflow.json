@@ -1,0 +1,182 @@
+{
+  "name": "Asistan — Mail Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "agent",
+      "credentials": {},
+      "parameters_full": {
+        "path": "agent",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "startsWith",
+              "value2": "mail_"
+            }
+          ]
+        }
+      },
+      "id": "action-filter",
+      "name": "Mail Action Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value": "={{ $json.action }}",
+              "output": 0,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "mail_read_inbox"}]
+              }
+            },
+            {
+              "value": "={{ $json.action }}",
+              "output": 1,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "mail_send"}]
+              }
+            },
+            {
+              "value": "={{ $json.action }}",
+              "output": 2,
+              "conditions": {
+                "string": [{"value1": "={{ $json.action }}", "operation": "equals", "value2": "mail_extract_meeting"}]
+              }
+            }
+          ]
+        }
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": "={{ $json.data.count || 5 }}",
+        "options": {
+          "labelIds": ["INBOX"]
+        }
+      },
+      "id": "gmail-read",
+      "name": "Gmail — Read Inbox",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [950, 160],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail - Asistan"
+        }
+      },
+      "notes": "Gmail OAuth2 credential'ınızı n8n'de oluşturup ID'sini buraya yazın."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.data.to }}",
+        "subject": "={{ $json.data.subject }}",
+        "message": "={{ $json.data.body }}"
+      },
+      "id": "gmail-send",
+      "name": "Gmail — Send",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [950, 340],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail - Asistan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.data.mail_id }}"
+      },
+      "id": "gmail-get-single",
+      "name": "Gmail — Get Single",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [950, 520],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail - Asistan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: $json }) }}"
+      },
+      "id": "respond-success",
+      "name": "Respond — Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Bu action mail workflow tarafından işlenmiyor.' }) }}"
+      },
+      "id": "respond-not-mail",
+      "name": "Respond — Not Mail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [700, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Mail Action Filter", "type": "main", "index": 0}]]
+    },
+    "Mail Action Filter": {
+      "main": [
+        [{"node": "Action Router", "type": "main", "index": 0}],
+        [{"node": "Respond — Not Mail", "type": "main", "index": 0}]
+      ]
+    },
+    "Action Router": {
+      "main": [
+        [{"node": "Gmail — Read Inbox", "type": "main", "index": 0}],
+        [{"node": "Gmail — Send", "type": "main", "index": 0}],
+        [{"node": "Gmail — Get Single", "type": "main", "index": 0}]
+      ]
+    },
+    "Gmail — Read Inbox":   {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]},
+    "Gmail — Send":         {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]},
+    "Gmail — Get Single":   {"main": [[{"node": "Respond — Success", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{"name": "asistan"}, {"name": "mail"}],
+  "pinData": {},
+  "meta": {
+    "instanceId": "local-agent",
+    "templateCredsSetupCompleted": false
+  }
+}
