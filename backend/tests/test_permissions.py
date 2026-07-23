@@ -12,7 +12,6 @@ Test matrisi:
 Doğrudan DB tablosuna dayanan testler — LLM gerektirmez.
 """
 
-import pytest
 from core.permissions import permission_manager, PermissionResult
 
 

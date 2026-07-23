@@ -24,7 +24,6 @@ Hedef:
 
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 from dataclasses import dataclass
@@ -246,7 +245,7 @@ async def test_category_routing_accuracy():
     accuracy = correct_count / total
 
     print(f"\n{'='*60}")
-    print(f"AŞAMA 1 — KATEGORİ SEÇİMİ DOĞRULUK RAPORU")
+    print("AŞAMA 1 — KATEGORİ SEÇİMİ DOĞRULUK RAPORU")
     print(f"{'='*60}")
     for tc, ok in phase1_results:
         icon = "✅" if ok else "❌"
@@ -296,7 +295,7 @@ async def test_tool_selection_accuracy():
     accuracy = correct_count / total
 
     print(f"\n{'='*60}")
-    print(f"AŞAMA 2 — TOOL SEÇİMİ DOĞRULUK RAPORU")
+    print("AŞAMA 2 — TOOL SEÇİMİ DOĞRULUK RAPORU")
     print(f"{'='*60}")
     for tc, ok in phase2_results:
         icon = "✅" if ok else "❌"

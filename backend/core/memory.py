@@ -117,7 +117,7 @@ class ConversationMemory:
             self._trim(session_id)
 
         logger.debug(
-            f"Mesaj eklendi",
+            "Mesaj eklendi",
             extra={"session_id": session_id, "role": role, "length": len(content)},
         )
 
@@ -148,7 +148,7 @@ class ConversationMemory:
         """Oturumun geçmişini temizler."""
         with self._lock:
             self._store.pop(session_id, None)
-        logger.info(f"Oturum temizlendi", extra={"session_id": session_id})
+        logger.info("Oturum temizlendi", extra={"session_id": session_id})
 
     def clear_all(self) -> None:
         """Tüm oturumların geçmişini temizler (dikkatli kullan)."""
@@ -188,7 +188,7 @@ class ConversationMemory:
             del messages[:excess]
 
         logger.debug(
-            f"Oturum budandı",
+            "Oturum budandı",
             extra={"session_id": session_id, "removed": excess, "remaining": len(messages)},
         )
 

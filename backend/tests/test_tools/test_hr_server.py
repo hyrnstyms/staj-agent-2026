@@ -21,7 +21,7 @@ from __future__ import annotations
 import pytest
 from datetime import datetime
 
-from db.database import init_db, SessionLocal
+from db.database import init_db
 from db.seed import seed_database
 from mcp_servers.hr_server import HrServer, _parse_date, _count_leave_days
 

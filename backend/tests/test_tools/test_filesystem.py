@@ -16,7 +16,6 @@ Test senaryoları:
 """
 
 import pytest
-from pathlib import Path
 
 from mcp_servers.filesystem_server import FilesystemServer, SandboxViolationError
 

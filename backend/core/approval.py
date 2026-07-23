@@ -168,7 +168,7 @@ class ApprovalManager:
             self._store[approval_id] = req
 
         logger.info(
-            f"Onay isteği oluşturuldu",
+            "Onay isteği oluşturuldu",
             extra={
                 "approval_id": approval_id,
                 "tool_name": tool_name,
@@ -194,14 +194,14 @@ class ApprovalManager:
             req = self._store.get(approval_id)
 
         if req is None:
-            logger.warning(f"Onay isteği bulunamadı", extra={"approval_id": approval_id})
+            logger.warning("Onay isteği bulunamadı", extra={"approval_id": approval_id})
             return ApprovalStatus.EXPIRED
 
         if req.status == ApprovalStatus.PENDING and req.is_expired():
             with self._lock:
                 req.status = ApprovalStatus.EXPIRED
             logger.info(
-                f"Onay isteği süresi doldu", extra={"approval_id": approval_id}
+                "Onay isteği süresi doldu", extra={"approval_id": approval_id}
             )
 
         return req.status
@@ -235,7 +235,7 @@ class ApprovalManager:
             req = self._store.get(approval_id)
 
         if req is None:
-            logger.warning(f"Resolve: bulunamadı", extra={"approval_id": approval_id})
+            logger.warning("Resolve: bulunamadı", extra={"approval_id": approval_id})
             return None
 
         if req.status != ApprovalStatus.PENDING:
@@ -254,7 +254,7 @@ class ApprovalManager:
             req.resolved_by = resolved_by
 
         logger.info(
-            f"Onay isteği karara bağlandı",
+            "Onay isteği karara bağlandı",
             extra={
                 "approval_id": approval_id,
                 "decision": "APPROVED" if approved else "REJECTED",

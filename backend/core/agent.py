@@ -117,7 +117,7 @@ class Agent:
             AgentResponse
         """
         logger.info(
-            f"Agent.chat başlıyor",
+            "Agent.chat başlıyor",
             extra={
                 "session": session_id,
                 "user_id": user_id,

@@ -684,7 +684,7 @@ class CategoryRouter:
         # Aşama 1: Kategori seç
         category, category_raw, phase1_ok = await self._select_category(message, history)
         logger.info(
-            f"Kategori seçildi",
+            "Kategori seçildi",
             extra={"category": category, "phase1_success": phase1_ok},
         )
 
@@ -705,7 +705,7 @@ class CategoryRouter:
             message, category, history
         )
         logger.info(
-            f"Tool seçildi",
+            "Tool seçildi",
             extra={"tool": tool_name, "params": parameters, "phase2_success": phase2_ok},
         )
 
@@ -754,7 +754,7 @@ class CategoryRouter:
 
         if not success:
             logger.warning(
-                f"Kategori tanınamadı, fallback: genel_sohbet",
+                "Kategori tanınamadı, fallback: genel_sohbet",
                 extra={"raw": raw[:100]},
             )
             return "genel_sohbet", raw, False

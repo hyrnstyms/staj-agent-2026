@@ -27,7 +27,6 @@ from typing import Any
 
 from mcp.types import (
     CallToolResult,
-    TextContent,
     Tool,
 )
 

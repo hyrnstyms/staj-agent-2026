@@ -26,11 +26,10 @@ from __future__ import annotations
 import time
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -240,7 +239,7 @@ async def chat(
     session_id = request.session_id or str(uuid.uuid4())
 
     logger.info(
-        f"POST /chat",
+        "POST /chat",
         extra={
             "session": session_id,
             "user": current_user.email,
@@ -306,7 +305,7 @@ async def approve_action(
         )
 
     logger.info(
-        f"Onay verildi",
+        "Onay verildi",
         extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user.email},
     )
 
@@ -348,7 +347,7 @@ async def reject_action(
         )
 
     logger.info(
-        f"Onay reddedildi",
+        "Onay reddedildi",
         extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user.email},
     )
 

@@ -60,7 +60,7 @@ def check_status():
         r = requests.get(f"{BASE_URL}/health", timeout=5)
         r.raise_for_status()
         d = r.json()
-        print(f"\n✅ Backend çalışıyor")
+        print("\n✅ Backend çalışıyor")
         print(f"   Model         : {d.get('model')}")
         print(f"   Ollama URL    : {d.get('ollama_url')}")
         print(f"   Aktif oturum  : {d.get('active_sessions')}")

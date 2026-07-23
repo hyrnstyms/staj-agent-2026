@@ -35,7 +35,6 @@ from config import settings
 from core.agent import Agent
 from core.approval import approval_manager
 from core.logger import get_logger
-from core.memory import conversation_memory
 from db.database import SessionLocal
 from db.models import User
 
@@ -74,7 +73,7 @@ async def websocket_chat(
         user = User(id=1, name="Admin", email="admin@sirket.com", role="admin")
 
     logger.info(
-        f"WebSocket bağlandı",
+        "WebSocket bağlandı",
         extra={"session": session_id, "user": user.email},
     )
 
@@ -103,7 +102,7 @@ async def websocket_chat(
                 continue
 
             logger.info(
-                f"WS mesaj alındı",
+                "WS mesaj alındı",
                 extra={"session": session_id, "preview": message[:60]},
             )
 
@@ -145,7 +144,7 @@ async def websocket_chat(
             })
 
     except WebSocketDisconnect:
-        logger.info(f"WebSocket bağlantısı kesildi", extra={"session": session_id})
+        logger.info("WebSocket bağlantısı kesildi", extra={"session": session_id})
     except Exception as exc:
         logger.error(f"WebSocket hatası: {exc}", exc_info=True)
         try:
@@ -154,4 +153,4 @@ async def websocket_chat(
             pass
     finally:
         db.close()
-        logger.info(f"WebSocket session kapatıldı", extra={"session": session_id})
+        logger.info("WebSocket session kapatıldı", extra={"session": session_id})

@@ -17,10 +17,8 @@ Güvenlik Testleri:
 from __future__ import annotations
 
 import pytest
-from sqlalchemy.orm import Session
 
-from db.database import SessionLocal, init_db
-from db.models import Base
+from db.database import init_db
 from db.seed import seed_database
 from mcp_servers.database_server import (
     RESTRICTED_TABLES,

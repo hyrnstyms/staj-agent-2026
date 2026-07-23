@@ -18,7 +18,6 @@ Yüklenenler:
 
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 # Windows cp1254 locale sorunu için stdout'u UTF-8'e zorla

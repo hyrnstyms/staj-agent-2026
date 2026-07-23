@@ -105,7 +105,7 @@ class PermissionManager:
         if perm is None:
             # Bilinmeyen kombinasyon — güvenli tarafta kal (deny)
             logger.warning(
-                f"İzin kaydı bulunamadı, varsayılan: RED",
+                "İzin kaydı bulunamadı, varsayılan: RED",
                 extra={"role": user_role, "tool": tool_name},
             )
             return PermissionResult(
@@ -121,7 +121,7 @@ class PermissionManager:
 
         if not perm.allowed:
             logger.info(
-                f"Erişim reddedildi",
+                "Erişim reddedildi",
                 extra={"role": user_role, "tool": tool_name},
             )
             return PermissionResult(
@@ -133,7 +133,7 @@ class PermissionManager:
             )
 
         logger.debug(
-            f"Erişim izni verildi",
+            "Erişim izni verildi",
             extra={
                 "role": user_role,
                 "tool": tool_name,

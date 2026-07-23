@@ -26,7 +26,6 @@ Kullanım:
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -60,7 +59,7 @@ class FilesystemServer:
         self.sandbox_root: Path = (sandbox_root or settings.SANDBOX_ROOT).resolve()
         self.sandbox_root.mkdir(parents=True, exist_ok=True)
         logger.info(
-            f"FilesystemServer başlatıldı",
+            "FilesystemServer başlatıldı",
             extra={"sandbox_root": str(self.sandbox_root)},
         )
 
@@ -137,7 +136,7 @@ class FilesystemServer:
         size = safe.stat().st_size
 
         logger.info(
-            f"file_read",
+            "file_read",
             extra={"path": str(safe), "size_bytes": size},
         )
 
@@ -210,7 +209,7 @@ class FilesystemServer:
         safe.unlink()
 
         logger.warning(
-            f"file_delete — dosya silindi",
+            "file_delete — dosya silindi",
             extra={"path": str(safe), "size_bytes": size},
         )
 
@@ -254,7 +253,7 @@ class FilesystemServer:
                 continue  # İzin hatası olan girişleri atla
 
         logger.info(
-            f"file_list",
+            "file_list",
             extra={"directory": str(safe), "count": len(items)},
         )
 
@@ -292,7 +291,7 @@ class FilesystemServer:
         shutil.move(str(safe_src), str(safe_dst))
 
         logger.info(
-            f"file_move",
+            "file_move",
             extra={"src": str(safe_src), "dst": str(safe_dst)},
         )
 
