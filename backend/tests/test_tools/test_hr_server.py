@@ -210,6 +210,21 @@ class TestGetEmployeesOnLeave:
 class TestRequestLeave:
     def test_create_leave_request(self, hr):
         """Geçerli bir izin talebi oluşturulur."""
+        # 1) Clear existing 2027 requests for Can Öztürk to prevent persistent DB conflicts
+        db = hr._session()
+        try:
+            from db.models import LeaveRequest, Employee
+            emp = db.query(Employee).filter_by(name="Can Öztürk").first()
+            if emp:
+                db.query(LeaveRequest).filter(
+                    LeaveRequest.employee_id == emp.id,
+                    LeaveRequest.start_date.like("2027-%")
+                ).delete(synchronize_session=False)
+                db.commit()
+        finally:
+            db.close()
+
+        # 2) Perform the test
         result = hr.request_leave(
             employee_name="Can Öztürk",
             start_date="2027-03-01",
