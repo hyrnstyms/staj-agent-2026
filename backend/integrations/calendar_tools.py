@@ -25,9 +25,9 @@ async def calendar_list_events(
         date_from: Başlangıç ISO 8601 (opsiyonel, varsayılan: şimdi)
         date_to:   Bitiş ISO 8601 (opsiyonel, varsayılan: 7 gün sonra)
     """
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return await n8n_call("calendar_list_events", {
         "date_from": date_from or now.strftime("%Y-%m-%dT%H:%M:%S"),
         "date_to": date_to or (now + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S"),
