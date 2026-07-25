@@ -117,7 +117,7 @@ function App() {
       <InputBar onSend={handleSend} />
 
       {/* ── Modallar ───────────────────────────────────────────────────────── */}
-      <ApprovalModal />
+      <ApprovalModal sendMessage={sendMessage} />
 
       {/* ── Ayarlar paneli ─────────────────────────────────────────────────── */}
       {settingsOpen && <SettingsPanel />}

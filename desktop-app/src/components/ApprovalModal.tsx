@@ -5,7 +5,11 @@ import { useChatStore } from "../store/chatStore";
 import { useApproval } from "../hooks/useApproval";
 import { useState } from "react";
 
-export function ApprovalModal() {
+interface Props {
+  sendMessage?: (message: string, approvalId?: string) => void;
+}
+
+export function ApprovalModal({ sendMessage }: Props) {
   const pendingApproval  = useChatStore((s) => s.pendingApproval);
   const [loading, setLoading] = useState(false);
   const { approve, reject }   = useApproval();
@@ -22,7 +26,22 @@ export function ApprovalModal() {
 
   const handleApprove = async () => {
     setLoading(true);
-    await approve(approval_id);
+    const result = await approve(approval_id);
+    if (result && sendMessage) {
+      const msgs = useChatStore.getState().messages;
+      const lastUserMsg = [...msgs].reverse().find(m => m.role === "user");
+      if (lastUserMsg) {
+        useChatStore.getState().addMessage({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "",
+          status: "streaming",
+          timestamp: new Date(),
+        });
+        useChatStore.getState().setStreaming(true);
+        sendMessage(lastUserMsg.content, approval_id);
+      }
+    }
     setLoading(false);
   };
 

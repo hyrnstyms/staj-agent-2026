@@ -83,7 +83,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "file_write",
-                "description": "Belirtilen yola dosya oluşturur veya üzerine yazar.",
+                "description": "Dosya oluşturur veya üzerine yazar. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -98,7 +98,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "file_delete",
-                "description": "Belirtilen dosyayı kalıcı olarak siler. Onay gerektirir.",
+                "description": "Dosyayı kalıcı olarak siler. Onay gerektirir. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -112,7 +112,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "file_list",
-                "description": "Belirtilen dizindeki dosya ve klasörleri listeler.",
+                "description": "Belirtilen dizindeki dosya ve klasörleri listeler. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -126,7 +126,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "file_move",
-                "description": "Dosyayı taşır veya yeniden adlandırır. Onay gerektirir.",
+                "description": "Dosyayı taşır veya yeniden adlandırır. Onay gerektirir. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -337,7 +337,7 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "code_lint",
-                "description": "Dosyadaki sözdizim hatalarını ve stil uyarılarını kontrol eder.",
+                "description": "Dosyadaki sözdizim hatalarını ve stil uyarılarını kontrol eder. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -351,11 +351,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "git_status",
-                "description": "Git reposundaki değişiklik durumunu gösterir.",
+                "description": "Git reposundaki değişiklik durumunu gösterir. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "repo_path": {"type": "string", "description": "Git repo dizini"}
+                        "repo_path": {"type": "string", "description": "Git repo dizini (boş veya '.' bırakırsanız varsayılan repoyu kullanır)"}
                     },
                     "required": ["repo_path"],
                 },
@@ -365,11 +365,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "git_diff_preview",
-                "description": "Bekleyen değişikliklerin özetini gösterir (push yapmaz).",
+                "description": "Bekleyen değişikliklerin özetini gösterir (push yapmaz). Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "repo_path": {"type": "string", "description": "Git repo dizini"}
+                        "repo_path": {"type": "string", "description": "Git repo dizini (boş veya '.' bırakırsanız varsayılan repoyu kullanır)"}
                     },
                     "required": ["repo_path"],
                 },
@@ -379,11 +379,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "git_create_branch",
-                "description": "Yeni bir git branch'i oluşturur.",
+                "description": "Yeni bir git branch'i oluşturur. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "repo_path":   {"type": "string", "description": "Git repo dizini"},
+                        "repo_path":   {"type": "string", "description": "Git repo dizini (boş veya '.' bırakırsanız varsayılan repoyu kullanır)"},
                         "branch_name": {"type": "string", "description": "Oluşturulacak branch adı"},
                     },
                     "required": ["repo_path", "branch_name"],
@@ -394,11 +394,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "git_commit_and_push",
-                "description": "Değişiklikleri commit edip uzak repoya push yapar. Onay gerektirir.",
+                "description": "Değişiklikleri commit edip uzak repoya push yapar. Onay gerektirir. Yollar Sandbox köküne görelidir. Asla 'sandbox/' öneki eklemeyin.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "repo_path": {"type": "string", "description": "Git repo dizini"},
+                        "repo_path": {"type": "string", "description": "Git repo dizini (boş veya '.' bırakırsanız varsayılan repoyu kullanır)"},
                         "message":   {"type": "string", "description": "Commit mesajı"},
                         "branch":    {"type": "string", "description": "Push yapılacak branch adı"},
                     },

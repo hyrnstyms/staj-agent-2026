@@ -68,13 +68,16 @@ class CodeServer:
         
     def _safe_repo(self, repo_path: str) -> Path:
         """Repo yolunun hem sandbox içerisinde hem de ALLOWED_REPOS listesinde olduğunu doğrular."""
-        target = self._safe_path(repo_path)
-        
         allowed_repos = settings.allowed_repos_list
         if not allowed_repos:
             # Eğer ALLOWED_REPOS boşsa güvenlik gereği hiçbir repoya izin verme
             raise SandboxViolationError("Sistemde yapılandırılmış ALLOWED_REPOS bulunamadı.")
             
+        if not repo_path or repo_path == ".":
+            return allowed_repos[0]
+
+        target = self._safe_path(repo_path)
+        
         for allowed in allowed_repos:
             try:
                 target.relative_to(allowed)
