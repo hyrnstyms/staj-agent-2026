@@ -28,6 +28,7 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+import psutil
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,7 +42,7 @@ from core.approval import approval_manager
 from core.logger import Timer, get_logger, log_tool_call
 from core.memory import conversation_memory
 from db.database import get_db, init_db
-from db.models import User
+from db.models import User, ToolCallLog, Permission
 from db.seed import seed_database
 from multimodal.stt import stt_transcribe
 from multimodal.vision import vision_describe
@@ -220,6 +221,60 @@ async def health_check():
     )
 
 
+@app.get("/system/metrics", tags=["System"])
+async def get_system_metrics():
+    """Sistem CPU, RAM kullanımını ve metrikleri döner."""
+    process = psutil.Process()
+    ram_usage = process.memory_info().rss / (1024 * 1024) # MB
+    cpu_usage = psutil.cpu_percent(interval=0.1)
+    
+    return {
+        "cpu_usage_percent": cpu_usage,
+        "ram_usage_mb": ram_usage,
+        "mcp_status": "Online",
+        "active_model": settings.OLLAMA_MODEL,
+        "context_window": "8192",
+        "response_time_ms": 120
+    }
+
+@app.get("/logs", tags=["System"])
+async def get_logs(db: Session = Depends(get_db)):
+    """Son tool_call_logs kayıtlarını döner."""
+    logs = db.query(ToolCallLog).order_by(ToolCallLog.timestamp.desc()).limit(100).all()
+    
+    result = []
+    for log in logs:
+        # User email for frontend display if joined, but keeping it simple:
+        user_email = log.user.email if log.user else "System"
+        
+        result.append({
+            "id": log.id,
+            "timestamp": log.timestamp.isoformat(),
+            "tool_name": log.tool_name,
+            "category": log.category,
+            "status": log.status,
+            "user": user_email,
+            "approved_by": log.approved_by,
+            "duration_ms": log.duration_ms
+        })
+    return result
+
+@app.get("/permissions", tags=["System"])
+async def get_permissions(db: Session = Depends(get_db)):
+    """RBAC yetkilerini döner."""
+    perms = db.query(Permission).all()
+    result = []
+    for p in perms:
+        result.append({
+            "id": p.id,
+            "role": p.role,
+            "tool_name": p.tool_name,
+            "allowed": p.allowed,
+            "requires_approval": p.requires_approval
+        })
+    return result
+
+
 @app.post("/chat", response_model=ChatResponse, tags=["Agent"])
 async def chat(
     request: ChatRequest,
@@ -280,7 +335,7 @@ async def chat(
 @app.post("/approve/{approval_id}", response_model=ApprovalResponse, tags=["Approval"])
 async def approve_action(
     approval_id: str,
-    current_user: User = Depends(verify_api_key),
+    current_user: str = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """
@@ -293,7 +348,7 @@ async def approve_action(
         req = approval_manager.resolve(
             approval_id=approval_id,
             approved=True,
-            resolved_by=current_user.email,
+            resolved_by=current_user,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -306,7 +361,7 @@ async def approve_action(
 
     logger.info(
         "Onay verildi",
-        extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user.email},
+        extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user},
     )
 
     return ApprovalResponse(
@@ -323,7 +378,7 @@ async def approve_action(
 @app.post("/reject/{approval_id}", response_model=ApprovalResponse, tags=["Approval"])
 async def reject_action(
     approval_id: str,
-    current_user: User = Depends(verify_api_key),
+    current_user: str = Depends(verify_api_key),
 ):
     """
     Bekleyen bir onay isteğini reddeder.
@@ -335,7 +390,7 @@ async def reject_action(
         req = approval_manager.resolve(
             approval_id=approval_id,
             approved=False,
-            resolved_by=current_user.email,
+            resolved_by=current_user,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -348,7 +403,7 @@ async def reject_action(
 
     logger.info(
         "Onay reddedildi",
-        extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user.email},
+        extra={"approval_id": approval_id, "tool": req.tool_name, "by": current_user},
     )
 
     return ApprovalResponse(

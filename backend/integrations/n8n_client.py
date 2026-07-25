@@ -46,7 +46,7 @@ async def n8n_call(action: str, data: dict[str, Any]) -> dict[str, Any]:
     logger.info(f"n8n çağrısı: {action}", extra={"webhook": webhook_url})
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, proxy=None, trust_env=False) as client:
             response = await client.post(webhook_url, json=payload, headers=headers)
             response.raise_for_status()
             return response.json()

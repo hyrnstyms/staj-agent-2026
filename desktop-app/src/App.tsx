@@ -1,128 +1,54 @@
 // src/App.tsx
 // Asistan — Ana uygulama bileşeni
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
+import { Route, Switch } from "wouter";
+import { Toaster } from "sonner";
 import { useChatStore } from "./store/chatStore";
-import { useWebSocket }  from "./hooks/useWebSocket";
-import { ChatWindow, AsistanLogo } from "./components/ChatWindow";
-import { InputBar }      from "./components/InputBar";
+import { useWebSocket } from "./hooks/useWebSocket";
 import { ApprovalModal } from "./components/ApprovalModal";
-import { SettingsPanel } from "./components/SettingsPanel";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Bağlantı durum göstergesi
-// ─────────────────────────────────────────────────────────────────────────────
-function ConnectionIndicator() {
-  const connected    = useChatStore((s) => s.connected);
-  const reconnecting = useChatStore((s) => s.reconnecting);
+import { DashboardLayout } from "./layouts/DashboardLayout";
+import { Home } from "./pages/Home";
+import { Chat } from "./pages/Chat";
+import { Projects, Voice, Data } from "./pages/Placeholders";
+import { Settings } from "./pages/Settings";
+import { Logs } from "./pages/Logs";
+import { Permissions } from "./pages/Permissions";
+import { Models } from "./pages/Models";
+import { Tools } from "./pages/Tools";
 
-  const dotClass = connected ? "connected" : reconnecting ? "reconnecting" : "disconnected";
-  const label    = connected ? "Bağlı" : reconnecting ? "Yeniden bağlanıyor…" : "Bağlantı yok";
+export default function App() {
+  const { loadSettings, pendingApproval } = useChatStore();
+  const { sendMessage } = useWebSocket(); // Initialize websocket connection globally
 
-  return (
-    <div className="connection-indicator">
-      <div className={`connection-dot ${dotClass}`} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Ana uygulama
-// ─────────────────────────────────────────────────────────────────────────────
-function App() {
-  const {
-    settings,
-    settingsOpen,
-    setSettingsOpen,
-    loadSettings,
-    addMessage,
-    updateLastMessage,
-    setStreaming,
-  } = useChatStore();
-
-  const { sendMessage } = useWebSocket();
-
-  // Uygulama başlangıcında ayarları yükle
   useEffect(() => {
     loadSettings();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ─── Mesaj gönderme akışı ─────────────────────────────────────────────────
-  const handleSend = useCallback(
-    (text: string) => {
-      // Kullanıcı mesajını listeye ekle
-      addMessage({
-        id:        crypto.randomUUID(),
-        role:      "user",
-        content:   text,
-        status:    "done",
-        timestamp: new Date(),
-      });
-
-      // Asistan için placeholder mesaj (streaming dolduracak)
-      addMessage({
-        id:        crypto.randomUUID(),
-        role:      "assistant",
-        content:   "",
-        status:    "streaming",
-        timestamp: new Date(),
-      });
-
-      setStreaming(true);
-
-      const sent = sendMessage(text);
-      if (!sent) {
-        updateLastMessage({
-          status:  "error",
-          content: "WebSocket bağlı değil. Lütfen backend'in çalıştığından emin ol.",
-        });
-        setStreaming(false);
-      }
-    },
-    [addMessage, sendMessage, setStreaming, updateLastMessage]
-  );
+  }, []);
 
   return (
-    <div className="app-layout">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="app-header">
-        <div className="header-brand">
-          <AsistanLogo size={32} />
-          <div>
-            <div className="header-title">Asistan</div>
-            <div className="header-subtitle">{settings.backendUrl}</div>
-          </div>
-        </div>
+    <>
+      <DashboardLayout>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/chat" component={Chat} />
+          <Route path="/voice" component={Voice} />
+          <Route path="/projects" component={Projects} />
+          <Route path="/models" component={Models} />
+          <Route path="/tools" component={Tools} />
+          <Route path="/data" component={Data} />
+          <Route path="/permissions" component={Permissions} />
+          <Route path="/logs" component={Logs} />
+          <Route path="/settings" component={Settings} />
+          <Route>
+            <div className="p-8 text-center text-brand-gray">404 - Sayfa Bulunamadı</div>
+          </Route>
+        </Switch>
+      </DashboardLayout>
 
-        <div className="header-actions">
-          <ConnectionIndicator />
-
-          {/* Ayarlar butonu */}
-          <button
-            id="btn-settings"
-            className="btn btn-icon"
-            title="Ayarlar"
-            onClick={() => setSettingsOpen(!settingsOpen)}
-          >
-            ⚙️
-          </button>
-        </div>
-      </header>
-
-      {/* ── Chat alanı ─────────────────────────────────────────────────────── */}
-      <ChatWindow />
-
-      {/* ── Giriş çubuğu ───────────────────────────────────────────────────── */}
-      <InputBar onSend={handleSend} />
-
-      {/* ── Modallar ───────────────────────────────────────────────────────── */}
-      <ApprovalModal sendMessage={sendMessage} />
-
-      {/* ── Ayarlar paneli ─────────────────────────────────────────────────── */}
-      {settingsOpen && <SettingsPanel />}
-    </div>
+      {/* Global Modals */}
+      {pendingApproval && <ApprovalModal sendMessage={sendMessage} />}
+      <Toaster position="bottom-right" />
+    </>
   );
 }
-
-export default App;

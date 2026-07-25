@@ -40,25 +40,25 @@ export function ChatWindow() {
 
   if (messages.length === 0) {
     return (
-      <div className="chat-window">
-        <div className="chat-empty">
-          <AsistanLogo size={64} dimmed />
-          <h1 className="chat-empty-title">Merhaba, ben Asistan</h1>
-          <p className="chat-empty-sub">
-            Dosyalar, veritabanı, kod, mail, takvim ve daha fazlası için
-            buradayım. Ne yapmamı istersin?
-          </p>
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center max-w-lg mx-auto opacity-70">
+        <div className="mb-6 animate-pulse">
+          <AsistanLogo size={80} dimmed />
         </div>
+        <h1 className="text-2xl font-bold text-brand-dark mb-3">Merhaba, ben PINGO</h1>
+        <p className="text-brand-gray text-base leading-relaxed">
+          Dosyalar, veritabanı, kod, mail, takvim ve daha fazlası için
+          buradayım. Ne yapmamı istersin?
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="chat-window">
+    <div className="flex flex-col gap-2">
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}
-      <div ref={bottomRef} style={{ height: 8 }} />
+      <div ref={bottomRef} className="h-4" />
     </div>
   );
 }

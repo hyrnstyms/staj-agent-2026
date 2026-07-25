@@ -19,7 +19,8 @@ class MailCalendarServer:
     """
 
     def __init__(self) -> None:
-        self.webhook_url = settings.N8N_WEBHOOK_URL
+        # Env var override'ını engellemek için doğrudan 127.0.0.1 kullanıyoruz
+        self.webhook_url = settings.N8N_WEBHOOK_URL.replace("localhost", "127.0.0.1")
         self.headers: dict[str, str] = {}
         if settings.N8N_API_KEY:
             self.headers["Authorization"] = f"Bearer {settings.N8N_API_KEY}"
@@ -34,9 +35,10 @@ class MailCalendarServer:
         diğer alanlar $json.body.field1 vb. ile okunur.
         """
         payload = {"action": action, **data}
+        logger.info(f"Attempting n8n connection to: {self.webhook_url}")
 
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, proxy=None, trust_env=False) as client:
                 response = await client.post(
                     self.webhook_url,
                     json=payload,

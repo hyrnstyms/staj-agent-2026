@@ -414,6 +414,34 @@ class ToolExecutor:
                 if inspect.isawaitable(result):
                     result = await result
 
+                # Tool kendi içinde hata dict'i dönmüş olabilir (exception fırlatmadan)
+                if isinstance(result, dict) and result.get("success") is False:
+                    error_msg = result.get("error", "Bilinmeyen hata")
+                    
+                    log_id = log_tool_call(
+                        tool_name=tool_name,
+                        parameters=parameters,
+                        status="error",
+                        db=db,
+                        category=category,
+                        result=result,
+                        user_id=user_id,
+                        session_id=session_id,
+                        approved_by=approved_by,
+                        duration_ms=timer.elapsed_ms,
+                        error_message=error_msg,
+                    )
+                    
+                    return ExecutionResult(
+                        success=False,
+                        data=None,
+                        error=error_msg,
+                        status="error",
+                        approval_id=approval_id,
+                        log_id=log_id,
+                        duration_ms=timer.elapsed_ms,
+                    )
+
                 log_id = log_tool_call(
                     tool_name=tool_name,
                     parameters=parameters,
