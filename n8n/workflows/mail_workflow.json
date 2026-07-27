@@ -10,7 +10,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "id": "6fa8f704-2cf1-4c44-a62c-d1c36dcbba53",
       "name": "Webhook",
       "webhookId": "abcaaf48-91f6-439a-ba01-fc2494676727"
@@ -21,8 +24,23 @@
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.body.action }}", "rightValue": "mail_send", "operator": { "type": "string", "operation": "equals" }, "id": "d6414ed5-3f17-4ab3-a1ad-abe884de8a70" }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "mail_send",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d6414ed5-3f17-4ab3-a1ad-abe884de8a70"
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -30,8 +48,24 @@
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "id": "b7546ef2-e86e-4c1b-8164-5e25dd15b4aa", "leftValue": "={{ $json.body.action }}", "rightValue": "calendar_add_event", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b7546ef2-e86e-4c1b-8164-5e25dd15b4aa",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "calendar_add_event",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -39,8 +73,23 @@
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890", "leftValue": "={{ $json.body.action }}", "rightValue": "mail_read_inbox", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "mail_read_inbox",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -48,8 +97,23 @@
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "id": "d2e3f4a5-b6c7-8901-bcde-f01234567891", "leftValue": "={{ $json.body.action }}", "rightValue": "mail_extract_meeting", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d2e3f4a5-b6c7-8901-bcde-f01234567891",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "mail_extract_meeting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -57,8 +121,23 @@
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "id": "e3f4a5b6-c7d8-9012-cdef-012345678912", "leftValue": "={{ $json.body.action }}", "rightValue": "calendar_list_events", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e3f4a5b6-c7d8-9012-cdef-012345678912",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "calendar_list_events",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -66,8 +145,23 @@
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "id": "f4a5b6c7-d8e9-0123-defa-123456789123", "leftValue": "={{ $json.body.action }}", "rightValue": "calendar_delete_event", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f4a5b6c7-d8e9-0123-defa-123456789123",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "calendar_delete_event",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -79,26 +173,43 @@
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
-      "position": [220, 0],
+      "position": [
+        220,
+        0
+      ],
       "id": "e98c575b-74b1-4dbe-9833-b5f13bf2db15",
       "name": "Switch"
     },
-
     {
       "parameters": {
-        "sendTo": "={{ $json.body.to }}",
-        "subject": "={{ $json.body.subject }}",
-        "message": "={{ $json.body.body }}",
+        "method": "POST",
+        "url": "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.body.access_token}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"raw\": \"{{ $json.body.raw }}\"\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
-      "position": [460, -240],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        -240
+      ],
       "id": "87bfadc1-6892-4420-b640-f30b8dccc663",
-      "name": "Gmail — Mail Gönder",
-      "credentials": {
-        "gmailOAuth2": { "id": "AcqDEtXSyZr77Vro", "name": "Gmail account" }
-      }
+      "name": "Gmail — Mail Gönder"
     },
     {
       "parameters": {
@@ -108,33 +219,43 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [680, -240],
+      "position": [
+        680,
+        -240
+      ],
       "id": "8c2031b8-6aa6-43b7-81f5-776ef7c822d1",
       "name": "Yanıt — Mail Gönderildi"
     },
-
     {
       "parameters": {
-        "calendar": {
-          "__rl": true,
-          "value": "saricannur24@gmail.com",
-          "mode": "list",
-          "cachedResultName": "saricannur24@gmail.com"
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.body.access_token}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
         },
-        "start": "={{ $json.body.start }}",
-        "end": "={{ $json.body.end }}",
-        "additionalFields": {
-          "summary": "={{ $json.body.title }}"
-        }
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"summary\": \"{{$json.body.title}}\",\n  \"start\": { \"dateTime\": \"{{$json.body.start}}\" },\n  \"end\": { \"dateTime\": \"{{$json.body.end}}\" }\n}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
-      "position": [460, -80],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        -80
+      ],
       "id": "459a4d11-652c-45a7-9538-4d35f06c03fa",
-      "name": "Calendar — Etkinlik Oluştur",
-      "credentials": {
-        "googleCalendarOAuth2Api": { "id": "C6f01sOvFrXSx6wU", "name": "Google Calendar account" }
-      }
+      "name": "Calendar — Etkinlik Oluştur"
     },
     {
       "parameters": {
@@ -144,63 +265,75 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [680, -80],
+      "position": [
+        680,
+        -80
+      ],
       "id": "0a20d021-a265-4113-97a4-8b79a1aba53d",
       "name": "Yanıt — Etkinlik Eklendi"
     },
-
     {
       "parameters": {
-        "operation": "getAll",
-        "returnAll": false,
-        "limit": "={{ $json.body.count || 5 }}",
-        "filters": {},
-        "options": { "includeSpamTrash": false }
+        "jsCode": "const token = $json.body.access_token;\nconst count = $json.body.count || 5;\n\nconst options = {\n  method: 'GET',\n  url: `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${count}`,\n  headers: { 'Authorization': `Bearer ${token}` },\n  json: true\n};\n\nlet emails = [];\ntry {\n    const listRes = await this.helpers.httpRequest(options);\n    const messages = listRes.messages || [];\n\n    for (const m of messages) {\n        const detailOpt = {\n          method: 'GET',\n          url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`,\n          headers: { 'Authorization': `Bearer ${token}` },\n          json: true\n        };\n        const msgData = await this.helpers.httpRequest(detailOpt);\n        const headers = msgData.payload.headers || [];\n        const getH = (n) => { const x = headers.find(h => h.name.toLowerCase() === n.toLowerCase()); return x ? x.value : ''; };\n        emails.push({\n            id: msgData.id,\n            subject: getH('subject'),\n            from: getH('from'),\n            date: getH('date'),\n            snippet: msgData.snippet\n        });\n    }\n} catch (error) {\n    return [{ json: { status: 'error', message: error.message } }];\n}\n\nreturn [{ json: Object.assign({}, $json, { emails: emails }) }];"
       },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
-      "position": [460, 80],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        80
+      ],
       "id": "a1b2c3d4-e5f6-7890-abcd-111111111111",
-      "name": "Gmail — Gelen Kutusu",
-      "credentials": {
-        "gmailOAuth2": { "id": "AcqDEtXSyZr77Vro", "name": "Gmail account" }
-      }
+      "name": "Gmail — Gelen Kutusu"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: \"success\", emails: $input.all().map(item => ({ id: item.json.id, subject: item.json.subject, from: item.json.from, date: item.json.date, snippet: item.json.snippet })) }) }}",
+        "responseBody": "={{ JSON.stringify({ status: \"success\", emails: $json.emails }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [680, 80],
+      "position": [
+        680,
+        80
+      ],
       "id": "b2c3d4e5-f6a7-8901-bcde-222222222222",
       "name": "Yanıt — E-postalar"
     },
-
     {
       "parameters": {
-        "operation": "get",
-        "messageId": "={{ $json.body.mail_id }}",
+        "method": "GET",
+        "url": "={{ \"https://gmail.googleapis.com/gmail/v1/users/me/messages/\" + $json.body.mail_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.body.access_token}}"
+            }
+          ]
+        },
         "options": {}
       },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
-      "position": [460, 240],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        240
+      ],
       "id": "c3d4e5f6-a7b8-9012-cdef-333333333333",
-      "name": "Gmail — Mail Getir",
-      "credentials": {
-        "gmailOAuth2": { "id": "AcqDEtXSyZr77Vro", "name": "Gmail account" }
-      }
+      "name": "Gmail — Mail Getir"
     },
     {
       "parameters": {
-        "jsCode": "const message = $input.first().json;\nconst body = (message.snippet || message.body || message.textPlain || '').toString();\n\n// Meeting link tespiti\nconst zoomMatch = body.match(/https:\\/\\/[\\w.-]*zoom\\.us\\/[^\\s<>\"]+/);\nconst meetMatch = body.match(/https:\\/\\/meet\\.google\\.com\\/[^\\s<>\"]+/);\nconst teamsMatch = body.match(/https:\\/\\/teams\\.microsoft\\.com\\/[^\\s<>\"]+/);\n\n// Tarih/saat tespiti (basit regex)\nconst dateMatch = body.match(/(\\d{4}-\\d{2}-\\d{2})|(\\d{1,2}[.\\/]\\d{1,2}[.\\/]\\d{2,4})/);\nconst timeMatch = body.match(/(\\d{1,2}:\\d{2}\\s*(AM|PM|am|pm)?)/);\n\nreturn [{\n  json: {\n    status: 'success',\n    mail_id: message.id,\n    subject: message.subject,\n    from: message.from,\n    meeting_link: zoomMatch?.[0] || meetMatch?.[0] || teamsMatch?.[0] || null,\n    detected_date: dateMatch?.[0] || null,\n    detected_time: timeMatch?.[0] || null,\n    snippet: body.substring(0, 300)\n  }\n}];"
+        "jsCode": "const msg = $input.first().json;\nlet body = '';\nif (msg.snippet) body = msg.snippet;\nif (msg.payload && msg.payload.parts) {\n    body += JSON.stringify(msg.payload.parts); \n}\n\nconst zoomMatch = body.match(/https:\\/\\/[\\w.-]*zoom\\.us\\/[^\\s<>\"]+/);\nconst meetMatch = body.match(/https:\\/\\/meet\\.google\\.com\\/[^\\s<>\"]+/);\nconst teamsMatch = body.match(/https:\\/\\/teams\\.microsoft\\.com\\/[^\\s<>\"]+/);\n\nconst dateMatch = body.match(/(\\d{4}-\\d{2}-\\d{2})|(\\d{1,2}[.\\/]\\d{1,2}[.\\/]\\d{2,4})/);\nconst timeMatch = body.match(/(\\d{1,2}:\\d{2}\\s*(AM|PM|am|pm)?)/);\n\nconst headers = (msg.payload && msg.payload.headers) ? msg.payload.headers : [];\nconst getH = (n) => { const x = headers.find(h => h.name.toLowerCase() === n.toLowerCase()); return x ? x.value : ''; };\n\nreturn [{\n  json: {\n    status: 'success',\n    mail_id: msg.id,\n    subject: getH('subject'),\n    from: getH('from'),\n    meeting_link: zoomMatch?.[0] || meetMatch?.[0] || teamsMatch?.[0] || null,\n    detected_date: dateMatch?.[0] || null,\n    detected_time: timeMatch?.[0] || null,\n    snippet: msg.snippet ? msg.snippet.substring(0, 300) : ''\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 240],
+      "position": [
+        680,
+        240
+      ],
       "id": "d4e5f6a7-b8c9-0123-defa-444444444444",
       "name": "Toplantı Bilgisi Çıkar"
     },
@@ -212,68 +345,100 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [900, 240],
+      "position": [
+        900,
+        240
+      ],
       "id": "e5f6a7b8-c9d0-1234-efab-555555555555",
       "name": "Yanıt — Toplantı Bilgisi"
     },
-
     {
       "parameters": {
-        "operation": "getAll",
-        "calendar": {
-          "__rl": true,
-          "value": "saricannur24@gmail.com",
-          "mode": "list",
-          "cachedResultName": "saricannur24@gmail.com"
+        "method": "GET",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.body.access_token}}"
+            }
+          ]
         },
-        "returnAll": false,
-        "limit": 20,
-        "options": {
-          "timeMin": "={{ $json.body.date_from || new Date().toISOString() }}",
-          "timeMax": "={{ $json.body.date_to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }}"
-        }
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeMin",
+              "value": "={{$json.body.date_from || new Date().toISOString()}}"
+            },
+            {
+              "name": "timeMax",
+              "value": "={{$json.body.date_to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}}"
+            },
+            {
+              "name": "singleEvents",
+              "value": "true"
+            },
+            {
+              "name": "orderBy",
+              "value": "startTime"
+            },
+            {
+              "name": "maxResults",
+              "value": "20"
+            }
+          ]
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
-      "position": [460, 400],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        400
+      ],
       "id": "f6a7b8c9-d0e1-2345-fabc-666666666666",
-      "name": "Calendar — Etkinlikleri Listele",
-      "credentials": {
-        "googleCalendarOAuth2Api": { "id": "C6f01sOvFrXSx6wU", "name": "Google Calendar account" }
-      }
+      "name": "Calendar — Etkinlikleri Listele"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: \"success\", events: $input.all().map(item => ({ id: item.json.id, title: item.json.summary, start: item.json.start?.dateTime || item.json.start?.date, end: item.json.end?.dateTime || item.json.end?.date, description: item.json.description })) }) }}",
+        "responseBody": "={{ JSON.stringify({ status: \"success\", events: ($json.items || []).map(item => ({ id: item.id, title: item.summary, start: item.start?.dateTime || item.start?.date, end: item.end?.dateTime || item.end?.date, description: item.description })) }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "id": "a7b8c9d0-e1f2-3456-abcd-777777777777",
       "name": "Yanıt — Etkinlik Listesi"
     },
-
     {
       "parameters": {
-        "operation": "delete",
-        "calendar": {
-          "__rl": true,
-          "value": "saricannur24@gmail.com",
-          "mode": "list",
-          "cachedResultName": "saricannur24@gmail.com"
+        "method": "DELETE",
+        "url": "={{ \"https://www.googleapis.com/calendar/v3/calendars/primary/events/\" + $json.body.event_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.body.access_token}}"
+            }
+          ]
         },
-        "eventId": "={{ $json.body.event_id }}"
+        "options": {}
       },
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
-      "position": [460, 560],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        560
+      ],
       "id": "b8c9d0e1-f2a3-4567-bcde-888888888888",
-      "name": "Calendar — Etkinlik Sil",
-      "credentials": {
-        "googleCalendarOAuth2Api": { "id": "C6f01sOvFrXSx6wU", "name": "Google Calendar account" }
-      }
+      "name": "Calendar — Etkinlik Sil"
     },
     {
       "parameters": {
@@ -283,37 +448,151 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [680, 560],
+      "position": [
+        680,
+        560
+      ],
       "id": "c9d0e1f2-a3b4-5678-cdef-999999999999",
       "name": "Yanıt — Etkinlik Silindi"
     }
   ],
-
   "pinData": {},
-
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "Switch", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Switch": {
       "main": [
-        [{ "node": "Gmail — Mail Gönder",          "type": "main", "index": 0 }],
-        [{ "node": "Calendar — Etkinlik Oluştur",  "type": "main", "index": 0 }],
-        [{ "node": "Gmail — Gelen Kutusu",         "type": "main", "index": 0 }],
-        [{ "node": "Gmail — Mail Getir",           "type": "main", "index": 0 }],
-        [{ "node": "Calendar — Etkinlikleri Listele", "type": "main", "index": 0 }],
-        [{ "node": "Calendar — Etkinlik Sil",      "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Gmail — Mail Gönder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar — Etkinlik Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail — Gelen Kutusu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail — Mail Getir",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar — Etkinlikleri Listele",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar — Etkinlik Sil",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Gmail — Mail Gönder":              { "main": [[{ "node": "Yanıt — Mail Gönderildi",   "type": "main", "index": 0 }]] },
-    "Calendar — Etkinlik Oluştur":     { "main": [[{ "node": "Yanıt — Etkinlik Eklendi",  "type": "main", "index": 0 }]] },
-    "Gmail — Gelen Kutusu":            { "main": [[{ "node": "Yanıt — E-postalar",         "type": "main", "index": 0 }]] },
-    "Gmail — Mail Getir":              { "main": [[{ "node": "Toplantı Bilgisi Çıkar",     "type": "main", "index": 0 }]] },
-    "Toplantı Bilgisi Çıkar":          { "main": [[{ "node": "Yanıt — Toplantı Bilgisi",  "type": "main", "index": 0 }]] },
-    "Calendar — Etkinlikleri Listele": { "main": [[{ "node": "Yanıt — Etkinlik Listesi",  "type": "main", "index": 0 }]] },
-    "Calendar — Etkinlik Sil":         { "main": [[{ "node": "Yanıt — Etkinlik Silindi",  "type": "main", "index": 0 }]] }
+    "Gmail — Mail Gönder": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — Mail Gönderildi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar — Etkinlik Oluştur": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — Etkinlik Eklendi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail — Gelen Kutusu": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — E-postalar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail — Mail Getir": {
+      "main": [
+        [
+          {
+            "node": "Toplantı Bilgisi Çıkar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Toplantı Bilgisi Çıkar": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — Toplantı Bilgisi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar — Etkinlikleri Listele": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — Etkinlik Listesi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar — Etkinlik Sil": {
+      "main": [
+        [
+          {
+            "node": "Yanıt — Etkinlik Silindi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-
   "active": false,
   "settings": {
     "executionOrder": "v1",
