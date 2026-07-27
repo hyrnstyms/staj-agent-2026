@@ -58,6 +58,8 @@ export function Settings() {
               </div>
             </div>
           </div>
+        </div>
+
         {/* Google OAuth Settings (Phase 4) */}
         <div className="glass-panel p-6">
           <div className="flex items-center gap-2 mb-4 text-brand-dark-gray">

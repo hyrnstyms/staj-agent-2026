@@ -61,3 +61,4 @@ google-auth-httplib2==0.2.0         # httplib2 transport (gerekli)
 # Phase 4 (uncomment when needed):
 # google-api-python-client==2.147.0
 # dateparser==1.2.0
+psutil==7.2.2
