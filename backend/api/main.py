@@ -129,6 +129,10 @@ app.include_router(mcp_router)
 from api.voice import router as voice_router
 app.include_router(voice_router)
 
+# Google OAuth router
+from api.auth_google import router as auth_google_router
+app.include_router(auth_google_router)
+
 # Tekil agent örneği
 _agent = Agent()
 

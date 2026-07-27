@@ -49,6 +49,11 @@ SpeechRecognition==3.10.4   # Mikrofon girişi → ses tamponu
 # pyaudio==0.2.14           # Linux/macOS: pip install pyaudio (portaudio gerekir)
 openai-whisper==20240930    # Yerel STT (whisper)
 
+# ── Google OAuth (Faz 4 — Mail/Takvim per-user token yönetimi) ──────────────
+google-auth==2.35.0                 # Google kimlik doğrulama kütüphanesi
+google-auth-oauthlib==1.2.1         # OAuth 2.0 flow yardımcısı
+google-auth-httplib2==0.2.0         # httplib2 transport (gerekli)
+
 # Phase 6 (uncomment when needed):
 # diffusers==0.30.0
 # transformers==4.44.0

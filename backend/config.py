@@ -66,6 +66,28 @@ class Settings(BaseSettings):
         description="n8n webhook isteğini doğrulayan anahtar (Bearer Auth için opsiyonel)",
     )
 
+    # ── Google OAuth (Faz 4 — Per-User Mail/Takvim) ───────────────────────────
+    GOOGLE_CLIENT_ID: str = Field(
+        default="",
+        description="Google Cloud Console'dan alınan OAuth 2.0 Client ID",
+    )
+    GOOGLE_CLIENT_SECRET: str = Field(
+        default="",
+        description="Google Cloud Console'dan alınan OAuth 2.0 Client Secret",
+    )
+    GOOGLE_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/auth/google/callback",
+        description="OAuth callback URL — Google Cloud Console'da ayarlanmalı",
+    )
+    GOOGLE_SCOPES: str = Field(
+        default=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar"
+        ),
+        description="İstenen Google API scope'ları (boşlukla ayrılmış)",
+    )
+
     # ── Dosya Sistemi Sandbox ─────────────────────────────────────────────────
     SANDBOX_ROOT: Path = Field(
         default=Path("sandbox"),

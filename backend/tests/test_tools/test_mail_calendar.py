@@ -23,10 +23,20 @@ def mock_httpx_post():
         mock_post.return_value = mock_response
         yield mock_post
 
+@pytest.fixture
+def mock_get_token():
+    with patch("integrations.google_oauth.get_valid_access_token", new_callable=AsyncMock) as mock_token:
+        mock_token.return_value = "mock_access_token"
+        yield mock_token
+
+@pytest.fixture
+def mock_db():
+    return MagicMock()
+
 
 @pytest.mark.asyncio
-async def test_mail_read_inbox(mock_httpx_post):
-    result = await mail_calendar_server.mail_read_inbox(count=3)
+async def test_mail_read_inbox(mock_httpx_post, mock_get_token, mock_db):
+    result = await mail_calendar_server.mail_read_inbox(count=3, user_id=1, db=mock_db)
     assert result["status"] == "success"
 
     mock_httpx_post.assert_called_once()
@@ -35,16 +45,19 @@ async def test_mail_read_inbox(mock_httpx_post):
     # Flat format: action + parametreler aynı seviyede
     assert payload["action"] == "mail_read_inbox"
     assert payload["count"] == 3
+    assert payload["access_token"] == "mock_access_token"
     # Nested "data" wrapper OLMAMALI
     assert "data" not in payload
 
 
 @pytest.mark.asyncio
-async def test_mail_send(mock_httpx_post):
+async def test_mail_send(mock_httpx_post, mock_get_token, mock_db):
     result = await mail_calendar_server.mail_send(
         to="test@example.com",
         subject="Merhaba",
         body="Deneme mesajı",
+        user_id=1,
+        db=mock_db,
     )
     assert result["status"] == "success"
 
@@ -53,13 +66,13 @@ async def test_mail_send(mock_httpx_post):
     assert payload["action"] == "mail_send"
     assert payload["to"] == "test@example.com"
     assert payload["subject"] == "Merhaba"
-    assert payload["body"] == "Deneme mesajı"
+    assert "raw" in payload  # body yerine raw (base64url) gelir
     assert "data" not in payload
 
 
 @pytest.mark.asyncio
-async def test_mail_extract_meeting(mock_httpx_post):
-    result = await mail_calendar_server.mail_extract_meeting(mail_id="abc123")
+async def test_mail_extract_meeting(mock_httpx_post, mock_get_token, mock_db):
+    result = await mail_calendar_server.mail_extract_meeting(mail_id="abc123", user_id=1, db=mock_db)
     assert result["status"] == "success"
 
     _, kwargs = mock_httpx_post.call_args
@@ -70,12 +83,14 @@ async def test_mail_extract_meeting(mock_httpx_post):
 
 
 @pytest.mark.asyncio
-async def test_calendar_add_event(mock_httpx_post):
+async def test_calendar_add_event(mock_httpx_post, mock_get_token, mock_db):
     """calendar_add_event artık start/end ISO8601 string alıyor (date+time+duration değil)."""
     result = await mail_calendar_server.calendar_add_event(
         title="Sprint Toplantısı",
         start="2026-08-01T14:00:00",
         end="2026-08-01T15:00:00",
+        user_id=1,
+        db=mock_db,
     )
     assert result["status"] == "success"
 
@@ -91,10 +106,12 @@ async def test_calendar_add_event(mock_httpx_post):
 
 
 @pytest.mark.asyncio
-async def test_calendar_list_events(mock_httpx_post):
+async def test_calendar_list_events(mock_httpx_post, mock_get_token, mock_db):
     result = await mail_calendar_server.calendar_list_events(
         date_from="2026-08-01T00:00:00",
         date_to="2026-08-07T23:59:59",
+        user_id=1,
+        db=mock_db,
     )
     assert result["status"] == "success"
 
@@ -107,8 +124,8 @@ async def test_calendar_list_events(mock_httpx_post):
 
 
 @pytest.mark.asyncio
-async def test_calendar_delete_event(mock_httpx_post):
-    result = await mail_calendar_server.calendar_delete_event(event_id="evt_xyz789")
+async def test_calendar_delete_event(mock_httpx_post, mock_get_token, mock_db):
+    result = await mail_calendar_server.calendar_delete_event(event_id="evt_xyz789", user_id=1, db=mock_db)
     assert result["status"] == "success"
 
     _, kwargs = mock_httpx_post.call_args
@@ -119,18 +136,18 @@ async def test_calendar_delete_event(mock_httpx_post):
 
 
 @pytest.mark.asyncio
-async def test_n8n_timeout_error():
+async def test_n8n_timeout_error(mock_get_token, mock_db):
     """n8n timeout durumunda sunucu çökmemeli, anlamlı hata dönmeli."""
     with patch("httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Timeout!")):
-        result = await mail_calendar_server.calendar_list_events()
+        result = await mail_calendar_server.calendar_list_events(user_id=1, db=mock_db)
         assert result["success"] is False
         assert "Zaman Aşımı" in result["error"]
 
 
 @pytest.mark.asyncio
-async def test_n8n_connection_error():
+async def test_n8n_connection_error(mock_get_token, mock_db):
     """n8n sunucusu kapalıyken anlamlı hata mesajı dönmeli."""
     with patch("httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
-        result = await mail_calendar_server.mail_read_inbox()
+        result = await mail_calendar_server.mail_read_inbox(user_id=1, db=mock_db)
         assert result["success"] is False
         assert "n8n" in result["error"].lower() or "ulaşılamadı" in result["error"]

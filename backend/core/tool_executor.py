@@ -97,7 +97,12 @@ class ToolExecutor:
 
     # ── Tool → Callable Haritası ─────────────────────────────────────────────
 
-    def _get_tool_entry(self, tool_name: str) -> tuple[Callable | None, bool]:
+    def _get_tool_entry(
+        self,
+        tool_name: str,
+        user_id: int | None = None,
+        db: Any = None,
+    ) -> tuple[Callable | None, bool]:
         """
         Tool adından (callable, is_lambda) çiftini döner.
 
@@ -178,30 +183,47 @@ class ToolExecutor:
             return code_tools[tool_name], True
 
         # ── Mail & Takvim (Faz 4) ─────────────────────────────────────────────
+        # PLUMBING NOTU: Lambda'lar parameters (p) dışında argüman alamaz.
+        # user_id ve db closure üzerinden yakalanır (_uid, _db).
+        # _get_tool_entry(tool_name, user_id, db) imzası bu nedenle değiştirildi.
         from mcp_servers.mail_calendar_server import mail_calendar_server
+        _uid = user_id   # closure capture — her lambda bunu kullanır
+        _db  = db        # closure capture
         mail_calendar_tools: dict[str, Callable] = {
             "mail_read_inbox": lambda p: mail_calendar_server.mail_read_inbox(
                 count=p.get("count", 5),
+                user_id=_uid,
+                db=_db,
             ),
             "mail_send": lambda p: mail_calendar_server.mail_send(
                 to=p.get("to", ""),
                 subject=p.get("subject", ""),
                 body=p.get("body", ""),
+                user_id=_uid,
+                db=_db,
             ),
             "mail_extract_meeting": lambda p: mail_calendar_server.mail_extract_meeting(
                 mail_id=p.get("mail_id", ""),
+                user_id=_uid,
+                db=_db,
             ),
             "calendar_list_events": lambda p: mail_calendar_server.calendar_list_events(
                 date_from=p.get("date_from"),
                 date_to=p.get("date_to"),
+                user_id=_uid,
+                db=_db,
             ),
             "calendar_add_event": lambda p: mail_calendar_server.calendar_add_event(
                 title=p.get("title", ""),
                 start=p.get("start", ""),
                 end=p.get("end", ""),
+                user_id=_uid,
+                db=_db,
             ),
             "calendar_delete_event": lambda p: mail_calendar_server.calendar_delete_event(
                 event_id=p.get("event_id", ""),
+                user_id=_uid,
+                db=_db,
             ),
         }
         if tool_name in mail_calendar_tools:
@@ -375,7 +397,8 @@ class ToolExecutor:
             # APPROVED — devam et
 
         # ── 3. Tool Callable'ını Bul ──────────────────────────────────────────
-        fn, is_lambda = self._get_tool_entry(tool_name)
+        # user_id ve db geçilir — mail/calendar lambda'ları closure üzerinden yakalar
+        fn, is_lambda = self._get_tool_entry(tool_name, user_id=user_id, db=db)
         if fn is None:
             error_msg = f"Bilinmeyen tool: '{tool_name}'"
             log_tool_call(

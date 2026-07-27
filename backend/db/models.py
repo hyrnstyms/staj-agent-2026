@@ -4,16 +4,18 @@ db/models.py
 SQLAlchemy ORM modelleri.
 
 Tablolar:
-    - users            : Sisteme giriş yapan kullanıcılar (rol bazlı)
-    - employees        : Şirket çalışan kaydı
-    - leave_requests   : İzin talepleri
-    - leave_balances   : Çalışan başına yıllık izin bakiyesi
-    - tool_call_logs   : Her tool çağrısının denetim kaydı
-    - permissions      : Rol × tool erişim matrisi
+    - users              : Sisteme giriş yapan kullanıcılar (rol bazlı)
+    - employees          : Şirket çalışan kaydı
+    - leave_requests     : İzin talepleri
+    - leave_balances     : Çalışan başına yıllık izin bakiyesi
+    - tool_call_logs     : Her tool çağrısının denetim kaydı
+    - permissions        : Rol × tool erişim matrisi
+    - google_oauth_tokens: Kullanıcı başına Google OAuth token (Faz 4)
 
 Notlar:
     - Tüm tablolar `created_at` / `updated_at` timestamp'lerine sahip.
     - `tool_call_logs` asla silinmemeli; denetim kaydı olarak kalıcıdır.
+    - `google_oauth_tokens.refresh_token` production'da Fernet ile şifrelenmeli.
 """
 
 from __future__ import annotations
@@ -287,4 +289,65 @@ class Permission(Base):
         return (
             f"<Permission role={self.role!r} tool={self.tool_name!r} "
             f"allowed={self.allowed} approval={self.requires_approval}>"
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# google_oauth_tokens
+# ─────────────────────────────────────────────────────────────────────────────
+class GoogleOAuthToken(Base):
+    """
+    Kullanıcı başına Google OAuth 2.0 token kaydı.
+
+    Faz 4 — Mail/Takvim per-user token yönetimi.
+
+    ⚠️  GÜVENLIK NOTU:
+        access_token ve refresh_token geliştirme aşamasında düz metin saklanır.
+        Production öncesi cryptography.fernet.Fernet ile alan bazlı şifreleme
+        zorunludur. refresh_token ele geçirilirse kalıcı Gmail/Calendar erişimi
+        sağlanabilir.
+
+    Alanlar:
+        user_id      : FK → users.id (her kullanıcı için tek kayıt)
+        access_token : Kısa ömürlü Google access token (~1 saat)
+        refresh_token: Uzun ömürlü refresh token (kullanıcı iptal edene kadar geçerli)
+        expires_at   : access_token'ın geçersiz olacağı UTC zaman
+        scopes       : İzin verilen scope'lar (boşlukla ayrılmış)
+        google_email : Bağlı Google hesabının e-posta adresi
+        is_valid     : False → invalid_grant (kullanıcı erişimi iptal etmiş)
+    """
+
+    __tablename__ = "google_oauth_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, unique=True
+    )
+    access_token: Mapped[str] = mapped_column(Text, nullable=False)
+    refresh_token: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    scopes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    google_email: Mapped[str] = mapped_column(
+        String(255), nullable=False, default=""
+    )
+    is_valid: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True,
+        comment="False = invalid_grant; kullanıcı yeniden bağlanmalı"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now, nullable=False
+    )
+
+    # İlişki
+    user: Mapped[User] = relationship("User")
+
+    def __repr__(self) -> str:
+        return (
+            f"<GoogleOAuthToken user_id={self.user_id} "
+            f"email={self.google_email!r} valid={self.is_valid}>"
         )
