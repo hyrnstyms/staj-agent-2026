@@ -38,6 +38,14 @@ router = APIRouter(prefix="/voice", tags=["Voice"])
 _agent = Agent()
 
 
+def _get_admin_user(db) -> User:
+    """API key doğrulandıktan sonra admin user'ı bul (geçici Faz-1 auth)."""
+    user = db.query(User).filter(User.email == "admin@sirket.com").first()
+    if user:
+        return user
+    return User(id=1, name="Admin", email="admin@sirket.com", role="admin")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Pydantic modelleri
 # ─────────────────────────────────────────────────────────────────────────────
@@ -97,7 +105,7 @@ async def _broadcast_voice_event(event_type: str, data: dict[str, Any] = {}) -> 
 
 @router.post("/start", response_model=VoiceResponse)
 async def start_listening(
-    current_user: User = Depends(verify_api_key),
+    api_key: str = Depends(verify_api_key),
 ):
     """
     Wake word dinlemeyi başlatır.
@@ -123,9 +131,12 @@ async def start_listening(
 
         def on_command(command: str):
             logger.info(f"📝 Sesli komut: {command}")
+            db = SessionLocal()
+            user = _get_admin_user(db)
+            db.close()
             asyncio.run_coroutine_threadsafe(
-                _handle_voice_command(command, current_user),
-                asyncio.get_event_loop(),
+                _handle_voice_command(command, user),
+                asyncio.get_running_loop(),
             )
 
         detector.on_wake = on_wake
@@ -134,15 +145,16 @@ async def start_listening(
         # State değişikliklerini WebSocket'e yayınla
         def on_state(new_state: str, info: dict):
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.run_coroutine_threadsafe(
-                        _broadcast_voice_event("state_change", {
-                            "state": new_state,
-                            **info,
-                        }),
-                        loop,
-                    )
+                loop = asyncio.get_running_loop()
+                asyncio.run_coroutine_threadsafe(
+                    _broadcast_voice_event("state_change", {
+                        "state": new_state,
+                        **info,
+                    }),
+                    loop,
+                )
+            except RuntimeError:
+                pass
             except Exception:
                 pass
 
@@ -162,7 +174,7 @@ async def start_listening(
 
 @router.post("/stop", response_model=VoiceResponse)
 async def stop_listening(
-    current_user: User = Depends(verify_api_key),
+    api_key: str = Depends(verify_api_key),
 ):
     """Wake word dinlemeyi durdurur ve Whisper modelini bellekten çıkarır."""
     try:
@@ -178,7 +190,7 @@ async def stop_listening(
 
 @router.get("/status", response_model=VoiceStatusResponse)
 async def get_voice_status(
-    current_user: User = Depends(verify_api_key),
+    api_key: str = Depends(verify_api_key),
 ):
     """Wake word dinleme durumunu sorgular."""
     try:
@@ -198,7 +210,7 @@ async def get_voice_status(
 @router.post("/command", response_model=VoiceCommandResponse)
 async def direct_voice_command(
     request: VoiceCommandRequest,
-    current_user: User = Depends(verify_api_key),
+    api_key: str = Depends(verify_api_key),
 ):
     """
     Doğrudan sesli komut gönderir (wake word olmadan).
@@ -207,13 +219,14 @@ async def direct_voice_command(
     Agent yanıtı opsiyonel olarak TTS ile sese çevrilir.
     """
     session_id = request.session_id or str(uuid.uuid4())
+    db = SessionLocal()
+    current_user = _get_admin_user(db)
 
     logger.info(
         "POST /voice/command",
         extra={"command": request.text[:80], "session": session_id},
     )
 
-    db = SessionLocal()
     try:
         response = await _agent.chat(
             session_id=session_id,
