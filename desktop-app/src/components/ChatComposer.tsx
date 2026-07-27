@@ -1,14 +1,23 @@
-import { useState, useRef, KeyboardEvent } from "react";
-import { Send, Paperclip, Mic, Image as ImageIcon, Folder, Code, Trash2 } from "lucide-react";
+import { useState, useRef, KeyboardEvent, useEffect } from "react";
+import { Send, Paperclip, Mic, Image as ImageIcon, Folder, Code, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useChatStore } from "../store/chatStore";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useAudioRecorder } from "../hooks/useAudioRecorder";
 
 export function ChatComposer() {
   const { connected, isStreaming, addMessage, setStreaming, clearMessages, messages } = useChatStore();
   const { sendMessage } = useWebSocket();
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  
+  const { recordingState, startRecording, stopRecording, error } = useAudioRecorder();
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   const handleSend = () => {
     if (!input.trim() || !connected || isStreaming) return;
@@ -48,6 +57,18 @@ export function ChatComposer() {
 
   const notifyNotImplemented = (feature: string) => {
     toast.info(`${feature} özelliği yakında eklenecek.`);
+  };
+
+  const handleMicClick = async () => {
+    if (recordingState === "idle" || recordingState === "error") {
+      await startRecording();
+    } else if (recordingState === "recording") {
+      const text = await stopRecording();
+      if (text) {
+        setInput(text);
+        adjustHeight();
+      }
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -114,11 +135,18 @@ export function ChatComposer() {
         
         <div className="flex items-center gap-1 pb-1">
            <button 
-             onClick={() => notifyNotImplemented("Ses kaydı")}
-             className="p-2.5 text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark rounded-xl transition-colors"
-             disabled={!connected}
+             onClick={handleMicClick}
+             className={`p-2.5 rounded-xl transition-colors ${
+               recordingState === 'recording'
+                 ? 'bg-status-red text-white animate-pulse'
+                 : recordingState === 'uploading'
+                 ? 'bg-status-yellow text-brand-dark cursor-wait'
+                 : 'text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark'
+             }`}
+             disabled={!connected || recordingState === "uploading"}
+             title={recordingState === 'recording' ? 'Kaydı durdur' : recordingState === 'uploading' ? 'İşleniyor...' : 'Sesle yazdır'}
            >
-              <Mic size={20} />
+              {recordingState === 'uploading' ? <Loader2 size={20} className="animate-spin" /> : <Mic size={20} />}
            </button>
            
            {messages.length > 0 && (

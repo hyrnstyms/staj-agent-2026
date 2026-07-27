@@ -125,6 +125,10 @@ app.include_router(ws_router)
 from api.mcp_endpoint import router as mcp_router
 app.include_router(mcp_router)
 
+# Voice (sesli komut) router
+from api.voice import router as voice_router
+app.include_router(voice_router)
+
 # Tekil agent örneği
 _agent = Agent()
 

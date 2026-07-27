@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   Home, MessageSquare, Mic, FolderKanban, Box, 
@@ -9,6 +9,7 @@ import { ChatComposer } from "../components/ChatComposer";
 import { Mascot } from "../components/Mascot";
 import { StatusPanel } from "../components/StatusPanel";
 import { toast } from "sonner";
+import { useWakeWord } from "../hooks/useWakeWord";
 
 interface Props {
   children: ReactNode;
@@ -16,15 +17,7 @@ interface Props {
 
 export function DashboardLayout({ children }: Props) {
   const [location] = useLocation();
-  const [isListening, setIsListening] = useState(true);
-
-  const toggleListening = () => {
-    const newState = !isListening;
-    setIsListening(newState);
-    if (newState) {
-      toast.info("Sesli asistan backend entegrasyonu yakında!");
-    }
-  };
+  const { enabled: isListening, state, toggle: toggleListening } = useWakeWord();
 
 const NAV_ITEMS = [
   { icon: Home, label: "Ana Sayfa", href: "/" },
@@ -83,10 +76,10 @@ const NAV_ITEMS = [
             <div className="flex items-center gap-2 mb-2">
               <Radio size={14} className={isListening ? "text-status-green animate-pulse" : "text-brand-gray"} />
               <span className={`text-[10px] font-bold tracking-widest uppercase ${isListening ? "text-status-green" : "text-brand-gray"}`}>
-                {isListening ? "Dinleniyor" : "Beklemede"}
+                {state === 'idle' ? 'Kapalı' : state === 'listening' ? 'Dinleniyor' : state === 'wake_detected' ? 'Algılandı!' : state === 'command_listening' ? 'Komut Dinleniyor' : 'Hata'}
               </span>
             </div>
-            <div className="text-sm font-medium mb-1">Hey Pingo</div>
+            <div className="text-sm font-medium mb-1">Hey Asistan</div>
             <div className="flex items-end gap-[3px] h-3 mt-2">
                {[...Array(6)].map((_, i) => (
                  <div 

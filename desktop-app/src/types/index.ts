@@ -29,6 +29,8 @@ export interface Message {
   timestamp: Date;
   tool_call?: ToolCall;
   approval_id?: string;
+  audioFile?: string;
+  toolName?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
