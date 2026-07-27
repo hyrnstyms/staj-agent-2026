@@ -8,7 +8,6 @@ import {
 import { ChatComposer } from "../components/ChatComposer";
 import { Mascot } from "../components/Mascot";
 import { StatusPanel } from "../components/StatusPanel";
-import { toast } from "sonner";
 import { useWakeWord } from "../hooks/useWakeWord";
 
 interface Props {

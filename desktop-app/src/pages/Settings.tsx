@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useChatStore } from "../store/chatStore";
 import { toast } from "sonner";
-import { Save, Server, Key, Volume2, ShieldAlert } from "lucide-react";
+import { Save, Server, Volume2, ShieldAlert } from "lucide-react";
 
 export function Settings() {
   const { settings, setSettings } = useChatStore();
