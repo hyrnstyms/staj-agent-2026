@@ -11,7 +11,8 @@ import { ApprovalModal } from "./components/ApprovalModal";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { Home } from "./pages/Home";
 import { Chat } from "./pages/Chat";
-import { Projects, Voice, Data } from "./pages/Placeholders";
+import { Projects, Data } from "./pages/Placeholders";
+import { VoicePage } from "./pages/Voice";
 import { Settings } from "./pages/Settings";
 import { Logs } from "./pages/Logs";
 import { Permissions } from "./pages/Permissions";
@@ -32,7 +33,7 @@ export default function App() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/chat" component={Chat} />
-          <Route path="/voice" component={Voice} />
+          <Route path="/voice" component={VoicePage} />
           <Route path="/projects" component={Projects} />
           <Route path="/models" component={Models} />
           <Route path="/tools" component={Tools} />

@@ -1,61 +1,48 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useChatStore } from "../store/chatStore";
 
 export type WakeWordState = "idle" | "listening" | "wake_detected" | "command_listening" | "error";
 
+// Singleton state — tüm bileşenler aynı state'i paylaşır
+let _globalEnabled = false;
+let _globalState: WakeWordState = "idle";
+let _globalWs: WebSocket | null = null;
+let _listeners: Set<() => void> = new Set();
+
+function notifyAll() {
+  _listeners.forEach(fn => fn());
+}
+
 export function useWakeWord() {
-  const [state, setState] = useState<WakeWordState>("idle");
-  const [enabled, setEnabled] = useState(false);
   const { settings } = useChatStore();
-  const wsRef = useRef<WebSocket | null>(null);
+  const [, forceUpdate] = useState(0);
 
-  const start = async () => {
-    try {
-      const res = await fetch(`${settings.backendUrl}/voice/start`, {
-        method: "POST",
-        headers: { "X-API-Key": settings.apiKey }
-      });
-      if (res.ok) {
-        setEnabled(true);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const stop = async () => {
-    try {
-      await fetch(`${settings.backendUrl}/voice/stop`, {
-        method: "POST",
-        headers: { "X-API-Key": settings.apiKey }
-      });
-      setEnabled(false);
-      setState("idle");
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const toggle = () => {
-    if (enabled) stop();
-    else start();
-  };
-
+  // Register this component to re-render on global state changes
   useEffect(() => {
+    const listener = () => forceUpdate(n => n + 1);
+    _listeners.add(listener);
+    return () => { _listeners.delete(listener); };
+  }, []);
+
+  // WebSocket bağlantısı — sadece bir kez oluşturulur
+  useEffect(() => {
+    if (_globalWs && _globalWs.readyState <= 1) return; // Zaten bağlı
+
     // İlk durumu çek
     fetch(`${settings.backendUrl}/voice/status`, { headers: { "X-API-Key": settings.apiKey } })
       .then(r => r.json())
       .then(d => {
-         setEnabled(d.running);
-         setState(d.state);
+         _globalEnabled = d.running;
+         _globalState = d.state;
+         notifyAll();
       }).catch(() => {});
 
-    // WebSocket ile canlı state takibi
+    // WebSocket
     let wsUrl = settings.backendUrl.replace("http://", "ws://").replace("https://", "wss://");
     if (wsUrl.endsWith("/")) wsUrl = wsUrl.slice(0, -1);
-    
+
     const ws = new WebSocket(`${wsUrl}/voice/ws`);
-    wsRef.current = ws;
+    _globalWs = ws;
 
     ws.onmessage = (e) => {
       try {
@@ -63,17 +50,16 @@ export function useWakeWord() {
         const { addMessage } = useChatStore.getState();
 
         if (data.type === "state_change") {
-          setState(data.state);
+          _globalState = data.state;
         } else if (data.type === "wake_detected") {
-          setState("wake_detected");
+          _globalState = "wake_detected";
         } else if (data.type === "connected") {
-          setEnabled(data.status.running);
-          setState(data.status.state);
+          _globalEnabled = data.status?.running ?? false;
+          _globalState = data.status?.state ?? "idle";
         } else if (data.type === "stopped") {
-          setEnabled(false);
-          setState("idle");
+          _globalEnabled = false;
+          _globalState = "idle";
         } else if (data.type === "command") {
-          // Komut alındığında kullanıcı mesajı olarak ekle
           addMessage({
             id: crypto.randomUUID(),
             role: "user",
@@ -82,32 +68,76 @@ export function useWakeWord() {
             timestamp: new Date()
           });
         } else if (data.type === "response") {
-          // Asistan yanıtını ekle
           addMessage({
             id: crypto.randomUUID(),
             role: "assistant",
             content: data.text,
             status: "done",
             timestamp: new Date(),
-            audioFile: data.audio_file, // Frontend bunu destekliyorsa
-            toolName: data.tool_name
           });
-          
-          if (data.audio_file) {
-            // TODO: İsterseniz doğrudan HTML5 audio ile çalabilirsiniz
-            // Örnek: new Audio(file_url).play(); ama yerel dosya yolu dönebilir, 
-            // static file serve ayarlamak gerekebilir.
-          }
         }
+        notifyAll();
       } catch (err) {
-        console.error("WS Parse error", err);
+        console.error("Voice WS error", err);
       }
     };
 
+    ws.onerror = () => {
+      console.warn("Voice WebSocket bağlantı hatası (backend /voice/ws erişilemez olabilir)");
+    };
+
+    ws.onclose = () => {
+      _globalWs = null;
+    };
+
     return () => {
-      ws.close();
+      // Cleanup sadece son component unmount olduğunda
+      if (_listeners.size <= 1) {
+        ws.close();
+        _globalWs = null;
+      }
     };
   }, [settings.backendUrl, settings.apiKey]);
 
-  return { enabled, state, toggle };
+  const start = useCallback(async () => {
+    try {
+      const res = await fetch(`${settings.backendUrl}/voice/start`, {
+        method: "POST",
+        headers: { "X-API-Key": settings.apiKey }
+      });
+      const data = await res.json();
+      if (data.success) {
+        _globalEnabled = true;
+        _globalState = data.state || "listening";
+        notifyAll();
+      }
+    } catch (e) {
+      console.error("Voice start error:", e);
+    }
+  }, [settings]);
+
+  const stop = useCallback(async () => {
+    try {
+      await fetch(`${settings.backendUrl}/voice/stop`, {
+        method: "POST",
+        headers: { "X-API-Key": settings.apiKey }
+      });
+      _globalEnabled = false;
+      _globalState = "idle";
+      notifyAll();
+    } catch (e) {
+      console.error("Voice stop error:", e);
+    }
+  }, [settings]);
+
+  const toggle = useCallback(() => {
+    if (_globalEnabled) stop();
+    else start();
+  }, [start, stop]);
+
+  return { 
+    enabled: _globalEnabled, 
+    state: _globalState, 
+    toggle 
+  };
 }

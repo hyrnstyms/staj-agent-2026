@@ -12,5 +12,4 @@ export function PlaceholderPage({ title }: { title: string }) {
 
 // Re-export for specific routes
 export const Projects = () => <PlaceholderPage title="Proje Yönetimi" />;
-export const Voice = () => <PlaceholderPage title="Sesli Komutlar" />;
 export const Data = () => <PlaceholderPage title="Veri Yönetimi" />;

@@ -1,28 +1,31 @@
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
-import { Send, Paperclip, Mic, Image as ImageIcon, Folder, Code, Trash2, Loader2 } from "lucide-react";
+import { Send, Mic, MicOff, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useChatStore } from "../store/chatStore";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { useAudioRecorder } from "../hooks/useAudioRecorder";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 export function ChatComposer() {
   const { connected, isStreaming, addMessage, setStreaming, clearMessages, messages } = useChatStore();
   const { sendMessage } = useWebSocket();
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
-  const { recordingState, startRecording, stopRecording, error } = useAudioRecorder();
+  const { state: speechState, transcript, startListening, stopListening, error: speechError } = useSpeechRecognition();
+
+  // Ses tanıma sırasında canlı olarak input'a yaz
+  useEffect(() => {
+    if (speechState === "listening" && transcript) {
+      setInput(transcript);
+    }
+  }, [transcript, speechState]);
 
   useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
-  }, [error]);
+    if (speechError) toast.error(speechError);
+  }, [speechError]);
 
   const handleSend = () => {
     if (!input.trim() || !connected || isStreaming) return;
     
-    // Add user message to store
     addMessage({
       id: crypto.randomUUID(),
       role: "user",
@@ -31,7 +34,6 @@ export function ChatComposer() {
       timestamp: new Date()
     });
 
-    // Add empty assistant placeholder
     addMessage({
       id: crypto.randomUUID(),
       role: "assistant",
@@ -43,9 +45,7 @@ export function ChatComposer() {
     setStreaming(true);
     sendMessage(input.trim());
     setInput("");
-    if (inputRef.current) {
-       inputRef.current.style.height = 'auto';
-    }
+    if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
   const handleClear = () => {
@@ -55,19 +55,24 @@ export function ChatComposer() {
     }
   };
 
-  const notifyNotImplemented = (feature: string) => {
-    toast.info(`${feature} özelliği yakında eklenecek.`);
-  };
-
-  const handleMicClick = async () => {
-    if (recordingState === "idle" || recordingState === "error") {
-      await startRecording();
-    } else if (recordingState === "recording") {
-      const text = await stopRecording();
-      if (text) {
+  const handleMicClick = () => {
+    if (speechState === "listening") {
+      const text = stopListening();
+      if (text.trim()) {
         setInput(text);
-        adjustHeight();
+        // Otomatik gönder
+        setTimeout(() => {
+          const trimmed = text.trim();
+          if (!trimmed || !connected || isStreaming) return;
+          addMessage({ id: crypto.randomUUID(), role: "user", content: trimmed, status: "done", timestamp: new Date() });
+          addMessage({ id: crypto.randomUUID(), role: "assistant", content: "", status: "streaming", timestamp: new Date() });
+          setStreaming(true);
+          sendMessage(trimmed);
+          setInput("");
+        }, 100);
       }
+    } else {
+      startListening();
     }
   };
 
@@ -87,45 +92,20 @@ export function ChatComposer() {
 
   return (
     <div className="glass-panel p-2 flex flex-col gap-2 rounded-2xl">
-      <div className="flex items-end gap-3">
-        <div className="flex items-center gap-1 pb-1">
-           <button 
-             onClick={() => notifyNotImplemented("Dosya ekleme")}
-             className="p-2.5 text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark rounded-xl transition-colors tooltip-trigger" title="Dosya Ekle"
-           >
-              <Paperclip size={20} />
-           </button>
-           <button 
-             onClick={() => notifyNotImplemented("Görsel yükleme")}
-             className="p-2.5 text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark rounded-xl transition-colors tooltip-trigger" title="Görsel Analizi"
-           >
-              <ImageIcon size={20} />
-           </button>
-           <button 
-             onClick={() => notifyNotImplemented("Klasör seçme")}
-             className="p-2.5 text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark rounded-xl transition-colors tooltip-trigger" title="Klasör Seç"
-           >
-              <Folder size={20} />
-           </button>
-           <div className="w-px h-4 bg-brand-light-gray mx-1" />
-           <button 
-             onClick={() => notifyNotImplemented("Kod bloğu ekleme")}
-             className="p-2.5 text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark rounded-xl transition-colors tooltip-trigger" title="Kod Bloğu Ekle"
-           >
-              <Code size={20} />
-           </button>
+      {/* Ses tanıma aktifken gösterge */}
+      {speechState === "listening" && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-xl mx-2">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-xs text-red-600 font-medium">Dinleniyor... Konuşmanız bitince mikrofona tekrar basın.</span>
         </div>
-      </div>
+      )}
 
       {/* Input Area */}
       <div className="flex items-end gap-2 px-2 pb-1">
         <textarea
           ref={inputRef}
           value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            adjustHeight();
-          }}
+          onChange={(e) => { setInput(e.target.value); adjustHeight(); }}
           onKeyDown={handleKeyDown}
           placeholder="PINGO'ya sor veya bir görev ver..."
           className="flex-1 max-h-48 resize-none bg-transparent border-none outline-none text-brand-dark placeholder:text-brand-gray py-2"
@@ -134,26 +114,25 @@ export function ChatComposer() {
         />
         
         <div className="flex items-center gap-1 pb-1">
+           {/* Mikrofon butonu */}
            <button 
              onClick={handleMicClick}
-             className={`p-2.5 rounded-xl transition-colors ${
-               recordingState === 'recording'
-                 ? 'bg-status-red text-white animate-pulse'
-                 : recordingState === 'uploading'
-                 ? 'bg-status-yellow text-brand-dark cursor-wait'
+             className={`p-2.5 rounded-xl transition-all duration-200 ${
+               speechState === 'listening'
+                 ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-200'
                  : 'text-brand-gray hover:bg-brand-light-gray/50 hover:text-brand-dark'
              }`}
-             disabled={!connected || recordingState === "uploading"}
-             title={recordingState === 'recording' ? 'Kaydı durdur' : recordingState === 'uploading' ? 'İşleniyor...' : 'Sesle yazdır'}
+             disabled={!connected || isStreaming}
+             title={speechState === 'listening' ? 'Kaydı durdur ve gönder' : 'Sesle söyle'}
            >
-              {recordingState === 'uploading' ? <Loader2 size={20} className="animate-spin" /> : <Mic size={20} />}
+              {speechState === 'listening' ? <MicOff size={20} /> : <Mic size={20} />}
            </button>
            
            {messages.length > 0 && (
              <button 
                onClick={handleClear}
                title="Sohbeti Temizle"
-               className="p-2.5 text-brand-gray hover:bg-status-red/10 hover:text-status-red rounded-xl transition-colors ml-1 mr-1"
+               className="p-2.5 text-brand-gray hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
              >
                 <Trash2 size={20} />
              </button>
@@ -162,7 +141,7 @@ export function ChatComposer() {
            <button 
              onClick={handleSend}
              disabled={!input.trim() || !connected || isStreaming}
-             className="p-2.5 bg-brand-dark text-white rounded-xl hover:bg-brand-indigo disabled:opacity-50 disabled:hover:bg-brand-dark transition-all duration-200 shadow-sm"
+             className="p-2.5 bg-brand-dark text-white rounded-xl hover:bg-brand-indigo disabled:opacity-50 transition-all duration-200 shadow-sm"
            >
               <Send size={20} />
            </button>

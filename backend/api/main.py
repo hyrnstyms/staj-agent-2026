@@ -286,7 +286,7 @@ async def get_permissions(db: Session = Depends(get_db)):
 @app.post("/chat", response_model=ChatResponse, tags=["Agent"])
 async def chat(
     request: ChatRequest,
-    current_user: User = Depends(verify_api_key),
+    current_user: str = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """
@@ -301,12 +301,29 @@ async def chat(
     """
     session_id = request.session_id or str(uuid.uuid4())
 
+    # Faz 1 geçici auth — User nesnesi yerine string key geliyor
+    # Varsayılan kullanıcı bilgilerini kullan
+    user_email = "admin@asistan.local"
+    user_role = "admin"
+    user_id = 1
+
+    # Eğer DB'de user varsa çek
+    try:
+        from db.models import User as UserModel
+        db_user = db.query(UserModel).first()
+        if db_user:
+            user_email = db_user.email
+            user_role = db_user.role
+            user_id = db_user.id
+    except Exception:
+        pass
+
     logger.info(
         "POST /chat",
         extra={
             "session": session_id,
-            "user": current_user.email,
-            "role": current_user.role,
+            "user": user_email,
+            "role": user_role,
             "message_preview": request.message[:80],
         },
     )
@@ -315,8 +332,8 @@ async def chat(
         response = await _agent.chat(
             session_id=session_id,
             message=request.message,
-            user_id=current_user.id,
-            user_role=current_user.role,
+            user_id=user_id,
+            user_role=user_role,
             db=db,
             approval_id=request.approval_id,
         )
@@ -463,7 +480,7 @@ async def clear_session(
 # ─────────────────────────────────────────────────────────────────────────────
 
 # İzin verilen MIME tipleri (gerçek içerik tipine göre — uzantıya güvenilmez)
-_AUDIO_MIMES = {"audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4"}
+_AUDIO_MIMES = {"audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/aac", "audio/x-m4a"}
 _IMAGE_MIMES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 _ALLOWED_MIMES = _AUDIO_MIMES | _IMAGE_MIMES
 
