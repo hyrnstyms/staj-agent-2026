@@ -33,14 +33,20 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Tarayıcının desteklediği WebM/Opus formatını seç
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg;codecs=opus";
+      // Tarayıcının desteklediği formatı seç (Safari = mp4, Chrome/Firefox = webm)
+      const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",        // Safari
+        "audio/aac",        // Safari fallback
+      ];
+      const mimeType = candidates.find(m => MediaRecorder.isTypeSupported(m));
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      // mimeType bulunamazsa tarayıcı varsayılanını kullan (option vermeden)
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
@@ -70,7 +76,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         // Ses stream'ini durdur
         recorder.stream.getTracks().forEach((t) => t.stop());
 
-        const mimeType = recorder.mimeType || "audio/webm";
+        const mimeType = recorder.mimeType || "audio/mp4";
         const blob = new Blob(chunksRef.current, { type: mimeType });
 
         // Boyut kontrolü — istemci tarafında ön kontrol (10MB)
@@ -86,7 +92,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
         // FormData ile /upload endpoint'ine gönder
         const form = new FormData();
-        const ext  = mimeType.includes("ogg") ? ".ogg" : ".webm";
+        const ext = mimeType.includes("mp4") ? ".m4a"
+                  : mimeType.includes("aac") ? ".aac"
+                  : mimeType.includes("ogg") ? ".ogg"
+                  : ".webm";
         form.append("file", blob, `recording${ext}`);
 
         try {

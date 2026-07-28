@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { Server, Activity, Database, Box, Zap, Mic } from "lucide-react";
+import { Server, Activity, Database, Box, Zap } from "lucide-react";
 import { useChatStore } from "../store/chatStore";
-import { useWakeWord } from "../hooks/useWakeWord";
 
 export function StatusPanel() {
   const [metrics, setMetrics] = useState<any>(null);
   const { connected, reconnecting, settings } = useChatStore();
-  const { enabled, state, toggle } = useWakeWord();
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -90,30 +88,6 @@ export function StatusPanel() {
           <div className="flex justify-between text-xs text-brand-gray">
             <span>Bağlantı</span>
             <span className="font-medium text-brand-dark-gray">Hazır</span>
-          </div>
-        </div>
-
-        {/* Voice Assistant / Wake Word */}
-        <div className="bg-brand-white rounded-xl p-3 border border-brand-light-gray">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Mic size={14} className="text-brand-gray" />
-              <span className="text-xs font-semibold text-brand-dark-gray">Sesli Asistan</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={toggle}
-                className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${enabled ? 'bg-status-green' : 'bg-brand-gray'}`}
-              >
-                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-between text-xs text-brand-gray">
-            <span>Durum</span>
-            <span className={`font-medium ${state === 'listening' ? 'text-brand-indigo' : state === 'wake_detected' ? 'text-status-green font-bold animate-pulse' : state === 'command_listening' ? 'text-status-yellow font-bold animate-pulse' : 'text-brand-dark-gray'}`}>
-              {state === 'idle' ? 'Kapalı' : state === 'listening' ? 'Dinleniyor' : state === 'wake_detected' ? 'Algılandı!' : state === 'command_listening' ? 'Komut Dinleniyor...' : 'Hata'}
-            </span>
           </div>
         </div>
 
