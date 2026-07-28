@@ -239,6 +239,9 @@ class ToolExecutor:
                 name=p.get("name", ""),
             ),
             "app_list_running": lambda p: app_server.app_list_running(),
+            "web_open": lambda p: app_server.web_open(
+                url=p.get("url", ""),
+            ),
         }
         if tool_name in app_tools:
             return app_tools[tool_name], True

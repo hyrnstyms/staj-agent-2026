@@ -56,7 +56,9 @@ export function VoicePage() {
         });
 
         const data = await res.json();
-        const reply = data.message || "Yanıt alınamadı.";
+        const rawReply = data.message || "Yanıt alınamadı.";
+        // LLM'in <english_thought>...</english_thought> bloklarını temizle
+        const reply = rawReply.replace(/<english_thought>[\s\S]*?<\/english_thought>/gi, "").trim();
 
         const assistantMsg: VoiceMessage = { id: crypto.randomUUID(), role: "assistant", text: reply };
         setMessages(prev => [...prev, assistantMsg]);

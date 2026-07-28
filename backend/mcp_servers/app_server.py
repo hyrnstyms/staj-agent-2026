@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import webbrowser
 from typing import Any
 
 from core.logger import get_logger
@@ -221,6 +222,39 @@ class AppServer:
 
         except Exception as exc:
             logger.error(f"app_list_running hatası: {exc}")
+            return {"success": False, "error": str(exc)}
+    def web_open(self, url: str) -> dict[str, Any]:
+        """
+        Belirtilen URL'i varsayılan tarayıcıda açar.
+
+        Args:
+            url: Açılacak web adresi (http:// veya https:// ile başlamalı)
+
+        Returns:
+            {"success": bool, "message": str, "url": str}
+        """
+        # Protokol güvenlik kontrolü
+        url = url.strip()
+        if not url.startswith(("http://", "https://")):
+            # Protokol yoksa https ekle
+            url = "https://" + url
+
+        try:
+            opened = webbrowser.open(url)
+            if opened:
+                logger.info("web_open", extra={"url": url})
+                return {
+                    "success": True,
+                    "message": f"'{url}' varsayılan tarayıcıda açıldı.",
+                    "url": url,
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Tarayıcı açılamadı. Varsayılan tarayıcı ayarlı olmayabilir.",
+                }
+        except Exception as exc:
+            logger.error(f"web_open hatası: {exc}", extra={"url": url})
             return {"success": False, "error": str(exc)}
 
 

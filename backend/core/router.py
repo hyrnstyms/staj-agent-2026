@@ -552,6 +552,20 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
                 "parameters": {"type": "object", "properties": {}, "required": []},
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "web_open",
+                "description": "Belirtilen URL'i varsayılan tarayıcıda açar. YouTube, Google, haber siteleri, herhangi bir web sayfası için kullan.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "description": "Açılacak web adresi (örn: 'https://youtube.com', 'google.com', 'https://github.com')"}
+                    },
+                    "required": ["url"],
+                },
+            },
+        },
     ],
 
     "gorsel_ses": [

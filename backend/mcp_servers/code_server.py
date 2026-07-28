@@ -94,58 +94,86 @@ class CodeServer:
             return output[:limit] + "\n... [çıktı kesildi]"
         return output or ""
 
+    def _docker_available(self) -> bool:
+        """Docker daemon'ın erişilebilir olup olmadığını kontrol eder."""
+        try:
+            result = subprocess.run(
+                ["docker", "info"],
+                capture_output=True, timeout=5, shell=False
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+
     def code_run(self, path: str, language: str) -> dict[str, Any]:
         """
-        Kodu Docker sandbox'ta çalıştırır. (Onay gerekmez)
+        Kodu çalıştırır.
+        - Docker varsa: izole sandbox container içinde çalıştırır (güvenli).
+        - Docker yoksa: mevcut Python ile direkt çalıştırır (sandbox yolu kontrolü yapılır).
         """
         if language not in ALLOWED_IMAGES:
             return {"success": False, "error": f"Desteklenmeyen dil: {language}. İzin verilenler: {list(ALLOWED_IMAGES.keys())}"}
-        
+
         try:
             target_file = self._safe_path(path)
             if not target_file.is_file():
                 return {"success": False, "error": f"Dosya bulunamadı: {path}"}
-                
-            image = ALLOWED_IMAGES[language]
-            host_dir = str(target_file.parent)
-            container_dir = "/workspace"
-            file_name = target_file.name
-            
-            # Dil için komut belirleme
-            if language == "python":
-                command = ["python", f"{container_dir}/{file_name}"]
-            elif language == "javascript":
-                command = ["node", f"{container_dir}/{file_name}"]
-            elif language == "bash":
-                command = ["sh", f"{container_dir}/{file_name}"]
-                
-            docker_cmd = _build_docker_command(host_dir, container_dir, image, command)
-            
-            # Docker komutunu çalıştır
-            result = subprocess.run(
-                docker_cmd,
-                capture_output=True,
-                text=True,
-                timeout=30,
-                shell=False
-            )
-            
+
+            # ── Docker varsa container içinde çalıştır ───────────────────────
+            if self._docker_available():
+                image = ALLOWED_IMAGES[language]
+                host_dir = str(target_file.parent)
+                container_dir = "/workspace"
+                file_name = target_file.name
+
+                if language == "python":
+                    command = ["python", f"{container_dir}/{file_name}"]
+                elif language == "javascript":
+                    command = ["node", f"{container_dir}/{file_name}"]
+                elif language == "bash":
+                    command = ["sh", f"{container_dir}/{file_name}"]
+
+                docker_cmd = _build_docker_command(host_dir, container_dir, image, command)
+                result = subprocess.run(
+                    docker_cmd, capture_output=True, text=True, timeout=30, shell=False
+                )
+                mode = "docker"
+
+            # ── Docker yoksa direkt Python ile çalıştır (fallback) ───────────
+            else:
+                logger.warning("Docker bulunamadı — direkt Python fallback kullanılıyor", extra={"path": path})
+                if language == "python":
+                    import sys as _sys
+                    cmd = [_sys.executable, str(target_file)]
+                elif language == "javascript":
+                    cmd = ["node", str(target_file)]
+                elif language == "bash":
+                    cmd = ["sh", str(target_file)]
+                else:
+                    return {"success": False, "error": f"Fallback desteklenmiyor: {language}"}
+
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=15, shell=False,
+                    cwd=str(target_file.parent)
+                )
+                mode = "direct"
+
             stdout = self._truncate_output(result.stdout)
             stderr = self._truncate_output(result.stderr)
-            
-            logger.info("code_run executed", extra={"path": path, "lang": language, "returncode": result.returncode})
-            
+            logger.info("code_run executed", extra={"path": path, "lang": language, "mode": mode, "returncode": result.returncode})
+
             return {
                 "success": result.returncode == 0,
                 "stdout": stdout,
                 "stderr": stderr,
-                "exit_code": result.returncode
+                "exit_code": result.returncode,
+                "mode": mode,
             }
-            
+
         except SandboxViolationError as exc:
             return {"success": False, "error": str(exc)}
         except subprocess.TimeoutExpired:
-            return {"success": False, "error": "Çalıştırma zaman aşımına uğradı (30s)."}
+            return {"success": False, "error": "Çalıştırma zaman aşımına uğradı."}
         except Exception as exc:
             return {"success": False, "error": str(exc)}
 

@@ -144,7 +144,7 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "dev-api-key-change-in-production",
   backendUrl: "http://localhost:8000",
-  ttsEnabled: false,
+  ttsEnabled: true,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
