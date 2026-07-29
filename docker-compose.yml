@@ -51,6 +51,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./backend:/app
       - ./backend/sandbox:/app/sandbox
       - ./backend/logs:/app/logs
       - ./backend/local_agent.db:/app/local_agent.db

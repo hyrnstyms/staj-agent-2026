@@ -243,7 +243,11 @@ async def get_valid_access_token(user_id: int, db: Any) -> str:
         )
 
     # Token hâlâ geçerliyse direkt dön
-    if _utcnow() < token_row.expires_at:
+    exp_time = token_row.expires_at
+    if exp_time.tzinfo is None:
+        exp_time = exp_time.replace(tzinfo=timezone.utc)
+    
+    if _utcnow() < exp_time:
         return token_row.access_token
 
     # Expire olmuş → refresh

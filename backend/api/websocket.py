@@ -111,6 +111,10 @@ async def websocket_chat(
                 extra={"session": session_id, "preview": message[:60]},
             )
 
+            # Ensure the DB session sees changes made by other requests (like Google OAuth callback)
+            # SQLite uses REPEATABLE READ / SERIALIZABLE in transactions. We must rollback to end the current transaction.
+            db.rollback()
+
             # Streaming yanıt gönder
             full_response = ""
             async for token in _agent.chat_stream(
