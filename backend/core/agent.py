@@ -29,6 +29,7 @@ Kullanım:
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, AsyncIterator
 
@@ -41,22 +42,27 @@ from core.memory import conversation_memory
 from core.router import CategoryRouter
 from core.tool_executor import ExecutionResult, tool_executor
 
+
+def _clean_llm_output(text: str) -> str:
+    """LLM çıktısından <english_thought>...</english_thought> bloklarını ve
+    gereksiz 'Çeviri Aşaması:' / 'Translation:' başlıklarını temizler."""
+    # <english_thought>...</english_thought> bloklarını sil
+    text = re.sub(r'<english_thought>[\s\S]*?</english_thought>', '', text, flags=re.IGNORECASE)
+    # Başlık kalıplarını temizle
+    text = re.sub(r'(?i)(çeviri aşaması|translation phase|turkish (response|answer)|türkçe (yanıt|cevap))\s*[:：]?\s*', '', text)
+    return text.strip()
+
 logger = get_logger(__name__)
 
-SYSTEM_PROMPT = """Sen yerel çalışan bir AI asistanısın. Kullanıcıya Türkçe olarak yardım edersin.
-SİSTEME TAM ERİŞİMİN VARDIR (FULL ACCESS). Dosya sistemi, veritabanı, kod çalıştırma ve uygulamaları yönetebilirsin.
-Asla "Ben bir yapay zekayım, dosyalara erişemem" veya benzeri ret (refusal) cümleleri kurma. Sana sağlanan fonksiyonları/araçları (tools) KESİNLİKLE KULLANMALISIN.
-Geri döndürülemez işlemler için onay mekanizması zaten arka planda mevcuttur. Sadece araçları çağır.
+SYSTEM_PROMPT = """Sen yerel çalışan bir AI asistanısın. Kullanıcıya YALNIZCA Türkçe olarak yardım edersin.
+SİSTEME TAM ERİŞİMİN VARDIR. Dosya sistemi, veritabanı, kod çalıştırma ve uygulamaları yönetebilirsin.
+Asla ret (refusal) cümleleri kurma. Sana sağlanan araçları (tools) KESİNLİKLE KULLAN.
 
-YANIT FORMATI (Kesinlikle uy):
-1. DÜŞÜNME AŞAMASI: Kullanıcının talebini analiz et, bilgileri topla ve tüm mantıksal akıl yürütme sürecini tamamen İngilizce olarak kurgula. Bu düşünceyi <english_thought> ve </english_thought> etiketleri arasına yaz.
-2. ÇEVİRİ AŞAMASI: Nihai cevabı doğal, akıcı ve dil bilgisi kurallarına uygun Türkçe olarak sun. Bu kısımda hiçbir etiket kullanma; kullanıcıya doğrudan Türkçe yaz.
-
-Çıktı formatın şu şekilde olmalıdır:
-<english_thought>
-[İngilizce akıl yürütme ve cevap]
-</english_thought>
-[Doğrudan Türkçe yanıt]"""
+KESİN KURALLAR:
+- SADECE Türkçe yanıt ver. İngilizce düşünce, etiket veya açıklama YAZMA.
+- Kısa ve net ol. Gereksiz açıklama yapma.
+- Araçları çağırdıktan sonra sonucu sadece Türkçe özetle.
+- <english_thought> veya benzeri hiçbir XML etiketi KULLANMA."""
 
 
 @dataclass
@@ -168,7 +174,7 @@ class Agent:
 
         # ── Genel sohbet ──────────────────────────────────────────────────────
         if router_result.is_general_chat or router_result.tool_name is None:
-            llm_response = await self._llm_chat(history)
+            llm_response = _clean_llm_output(await self._llm_chat(history))
             conversation_memory.add_message(session_id, "assistant", llm_response)
             return AgentResponse(
                 message=llm_response,
@@ -305,7 +311,8 @@ class Agent:
             async for token in self._llm_stream(history):
                 full_response += token
                 yield token
-            conversation_memory.add_message(session_id, "assistant", full_response)
+            cleaned = _clean_llm_output(full_response)
+            conversation_memory.add_message(session_id, "assistant", cleaned)
             return
 
         # Tool çalıştır (streaming olmayan)
@@ -350,7 +357,7 @@ class Agent:
         async for token in self._llm_stream(synthesis_history):
             full_response += token
             yield token
-        conversation_memory.add_message(session_id, "assistant", full_response)
+        conversation_memory.add_message(session_id, "assistant", _clean_llm_output(full_response))
 
     # ── Onay Devamı ───────────────────────────────────────────────────────────
 
@@ -405,7 +412,7 @@ class Agent:
             "role": "user",
             "content": "İşlem tamamlandı, kullanıcıya kısa bir Türkçe özet ver.",
         })
-        llm_response = await self._llm_chat(synthesis_history)
+        llm_response = _clean_llm_output(await self._llm_chat(synthesis_history))
         conversation_memory.add_message(session_id, "assistant", llm_response)
 
         return AgentResponse(

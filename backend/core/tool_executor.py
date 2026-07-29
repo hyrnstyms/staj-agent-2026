@@ -234,6 +234,7 @@ class ToolExecutor:
         app_tools: dict[str, Callable] = {
             "app_open": lambda p: app_server.app_open(
                 name=p.get("name", ""),
+                file=p.get("file"),
             ),
             "app_close": lambda p: app_server.app_close(
                 name=p.get("name", ""),
