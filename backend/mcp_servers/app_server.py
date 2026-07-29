@@ -59,31 +59,20 @@ KNOWN_WEBSITES: dict[str, str] = {
 
 # Güvenli uygulama whitelist'i — sadece bu uygulamalar açılabilir
 ALLOWED_APPS: dict[str, str] = {
-    # Windows uygulamaları
-    "notepad":      "notepad.exe",
-    "calc":         "calc.exe",
-    "calculator":   "calc.exe",
-    "paint":        "mspaint.exe",
-    "explorer":     "explorer.exe",
-    "wordpad":      "wordpad.exe",
-    "cmd":          "cmd.exe",
-    "powershell":   "powershell.exe",
-    "chrome":       "chrome.exe",
-    "firefox":      "firefox.exe",
-    "edge":         "msedge.exe",
+    # Windows sistem uygulamaları (tam yol)
+    "notepad":      r"C:\WINDOWS\system32\notepad.exe",
+    "calc":         r"C:\WINDOWS\system32\calc.exe",
+    "calculator":   r"C:\WINDOWS\system32\calc.exe",
+    "explorer":     r"C:\WINDOWS\explorer.exe",
+    "powershell":   r"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe",
+    "cmd":          r"C:\WINDOWS\system32\cmd.exe",
+    # Tarayıcılar
+    "chrome":       r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    "google chrome":r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    # VSCode
     "vscode":       r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
     "vs code":      r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
     "code":         r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
-    "word":         "winword.exe",
-    "excel":        "excel.exe",
-    "powerpoint":   "powerpnt.exe",
-    "teams":        "teams.exe",
-    "outlook":      "outlook.exe",
-    "spotify":      "spotify.exe",
-    "vlc":          "vlc.exe",
-    "discord":      "discord.exe",
-    "obs":          "obs64.exe",
-    "gimp":         "gimp.exe",
 }
 
 
