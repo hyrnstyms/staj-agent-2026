@@ -133,6 +133,10 @@ app.include_router(voice_router)
 from api.auth_google import router as auth_google_router
 app.include_router(auth_google_router)
 
+# GitHub Integration router
+from api.github_integration import router as github_router
+app.include_router(github_router)
+
 # Tekil agent örneği
 _agent = Agent()
 
@@ -302,15 +306,15 @@ async def chat(
     session_id = request.session_id or str(uuid.uuid4())
 
     # Faz 1 geçici auth — User nesnesi yerine string key geliyor
-    # Varsayılan kullanıcı bilgilerini kullan
+    # Settings'teki Google OAuth bağlantısı user_id=1 ile yapılır — bunu eşle
     user_email = "admin@asistan.local"
     user_role = "admin"
     user_id = 1
 
-    # Eğer DB'de user varsa çek
+    # Eğer DB'de user_id=1 varsa çek
     try:
         from db.models import User as UserModel
-        db_user = db.query(UserModel).first()
+        db_user = db.query(UserModel).filter(UserModel.id == 1).first()
         if db_user:
             user_email = db_user.email
             user_role = db_user.role

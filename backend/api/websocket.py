@@ -67,9 +67,14 @@ async def websocket_chat(
     session_id = session_id or str(uuid.uuid4())
     db: Session = SessionLocal()
 
-    # Demo user
-    user = db.query(User).filter(User.email == "admin@sirket.com").first()
+    # Demo user — ID=1 kullanılır çünkü Google OAuth token user_id=1 ile kaydedilmektedir.
+    # Settings sayfasındaki Google bağlantısı user_id=1 ile çalışır.
+    user = db.query(User).filter(User.id == 1).first()
     if user is None:
+        # Kullanıcı yoksa ilk kullanıcıyı al
+        user = db.query(User).first()
+    if user is None:
+        # Hiç kullanıcı yoksa geçici nesne oluştur
         user = User(id=1, name="Admin", email="admin@sirket.com", role="admin")
 
     logger.info(
