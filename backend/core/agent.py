@@ -54,15 +54,10 @@ def _clean_llm_output(text: str) -> str:
 
 logger = get_logger(__name__)
 
-SYSTEM_PROMPT = """Sen yerel çalışan bir AI asistanısın. Kullanıcıya YALNIZCA Türkçe olarak yardım edersin.
-SİSTEME TAM ERİŞİMİN VARDIR. Dosya sistemi, veritabanı, kod çalıştırma ve uygulamaları yönetebilirsin.
-Asla ret (refusal) cümleleri kurma. Sana sağlanan araçları (tools) KESİNLİKLE KULLAN.
-
-KESİN KURALLAR:
-- SADECE Türkçe yanıt ver. İngilizce düşünce, etiket veya açıklama YAZMA.
-- Kısa ve net ol. Gereksiz açıklama yapma.
-- Araçları çağırdıktan sonra sonucu sadece Türkçe özetle.
-- <english_thought> veya benzeri hiçbir XML etiketi KULLANMA."""
+SYSTEM_PROMPT = """Sen yerel çalışan bir AI asistanısın. Sisteme tam erişimin var: dosya, veritabanı, kod çalıştırma, uygulama açma.
+Ret cümleleri kurma. Araçları (tools) kullan. Kısa ve net yanıt ver.
+KULLANICI HANGİ DİLDE YAZARSA O DİLDE YANIT VER. Türkçe yazana Türkçe, İngilizce yazana İngilizce.
+Hiçbir XML etiketi (<english_thought> vb.) KULLANMA."""
 
 
 @dataclass
@@ -425,14 +420,35 @@ class Agent:
 
     # ── LLM Yardımcıları ─────────────────────────────────────────────────────
 
+    @staticmethod
+    def _detect_lang_hint(messages: list[dict]) -> str:
+        """Son kullanıcı mesajının diline göre yanıt dili talimatı döner."""
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                text = msg.get("content", "")
+                # Basit Türkçe karakter tespiti
+                turkish_chars = set("çÇğĞıİöÖşŞüÜ")
+                if any(c in turkish_chars for c in text):
+                    return "(Kullanıcı Türkçe yazdı — TÜRKÇE yanıt ver.)"
+                # Türkçe kelime tespiti
+                tr_words = {"merhaba", "nasıl", "nedir", "aç", "yaz", "yap", "göster", "bul", "sil", "oluştur", "listele", "ver", "çalıştır"}
+                if any(w in text.lower() for w in tr_words):
+                    return "(Kullanıcı Türkçe yazdı — TÜRKÇE yanıt ver.)"
+                return "(User wrote in English — respond in ENGLISH.)"
+        return ""
+
     async def _llm_chat(self, messages: list[dict]) -> str:
         """Ollama'dan senkron cevap alır."""
+        hint = self._detect_lang_hint(messages)
+        enforced = list(messages)
+        if hint:
+            enforced.append({"role": "user", "content": hint})
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             response = await client.post(
                 f"{self._base_url}/api/chat",
                 json={
                     "model": self._model,
-                    "messages": messages,
+                    "messages": enforced,
                     "stream": False,
                     "options": {"temperature": 0.7},
                 },
@@ -443,13 +459,17 @@ class Agent:
 
     async def _llm_stream(self, messages: list[dict]) -> AsyncIterator[str]:
         """Ollama'dan token'ları teker teker alır."""
+        hint = self._detect_lang_hint(messages)
+        enforced = list(messages)
+        if hint:
+            enforced.append({"role": "user", "content": hint})
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             async with client.stream(
                 "POST",
                 f"{self._base_url}/api/chat",
                 json={
                     "model": self._model,
-                    "messages": messages,
+                    "messages": enforced,
                     "stream": True,
                     "options": {"temperature": 0.7},
                 },
