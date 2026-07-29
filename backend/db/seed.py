@@ -143,14 +143,17 @@ PERMISSION_MATRIX: list[dict] = [
     {"role": "employee", "tool_name": "app_open",         "allowed": True,  "requires_approval": False},
     {"role": "employee", "tool_name": "app_close",        "allowed": True,  "requires_approval": False},
     {"role": "employee", "tool_name": "app_list_running", "allowed": True,  "requires_approval": False},
+    {"role": "employee", "tool_name": "web_open",         "allowed": True,  "requires_approval": False},
 
     {"role": "hr",       "tool_name": "app_open",         "allowed": True,  "requires_approval": False},
     {"role": "hr",       "tool_name": "app_close",        "allowed": True,  "requires_approval": False},
     {"role": "hr",       "tool_name": "app_list_running", "allowed": True,  "requires_approval": False},
+    {"role": "hr",       "tool_name": "web_open",         "allowed": True,  "requires_approval": False},
 
     {"role": "admin",    "tool_name": "app_open",         "allowed": True,  "requires_approval": False},
     {"role": "admin",    "tool_name": "app_close",        "allowed": True,  "requires_approval": False},
     {"role": "admin",    "tool_name": "app_list_running", "allowed": True,  "requires_approval": False},
+    {"role": "admin",    "tool_name": "web_open",         "allowed": True,  "requires_approval": False},
 
     # ── gorsel_ses ────────────────────────────────────────────────────────────
     {"role": "employee", "tool_name": "stt_transcribe",  "allowed": True,  "requires_approval": False},

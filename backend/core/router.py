@@ -520,11 +520,12 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "app_open",
-                "description": "Belirtilen uygulamayı açar (notepad, chrome, calculator, vscode vb.)",
+                "description": "Belirtilen uygulamayı açar. VSCode, Notepad gibi uygulamalara dosya veya klasör yolu da verilebilir.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "name": {"type": "string", "description": "Uygulama adı (örn: 'notepad', 'chrome', 'calculator')"}
+                        "name": {"type": "string", "description": "Uygulama adı (örn: 'notepad', 'chrome', 'calculator', 'vscode')"},
+                        "file": {"type": "string", "description": "Açılacak dosya veya klasör yolu (opsiyonel, örn: 'C:/proje/main.py' veya 'nlp-sentiment-project')"},
                     },
                     "required": ["name"],
                 },

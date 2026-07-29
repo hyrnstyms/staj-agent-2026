@@ -73,12 +73,13 @@ class AppServer:
                 return exe
         return None
 
-    def app_open(self, name: str) -> dict[str, Any]:
+    def app_open(self, name: str, file: str | None = None) -> dict[str, Any]:
         """
         Belirtilen uygulamayı başlatır.
 
         Args:
-            name: Uygulama adı (ör: 'notepad', 'chrome', 'calculator')
+            name: Uygulama adı (ör: 'notepad', 'chrome', 'calculator', 'vscode')
+            file: Açılacak dosya veya klasör yolu (opsiyonel, VSCode, Notepad vb. için)
 
         Returns:
             {"success": bool, "message": str, "pid": int | None}
@@ -100,17 +101,25 @@ class AppServer:
                 ),
             }
 
+        # Komut satırını oluştur
+        cmd = [exe]
+        if file:
+            # Dosya yolunu temizle ve ekle
+            file = file.strip().strip('"').strip("'")
+            cmd.append(file)
+
         try:
             proc = subprocess.Popen(
-                [exe],
+                cmd,
                 shell=False,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            logger.info("app_open", extra={"app": name, "exe": exe, "pid": proc.pid})
+            target = f"'{file}' dosyasıyla" if file else ""
+            logger.info("app_open", extra={"app": name, "exe": exe, "file": file, "pid": proc.pid})
             return {
                 "success": True,
-                "message": f"'{name}' ({exe}) başlatıldı.",
+                "message": f"'{name}' ({exe}) {target} başlatıldı.",
                 "pid": proc.pid,
             }
         except FileNotFoundError:
