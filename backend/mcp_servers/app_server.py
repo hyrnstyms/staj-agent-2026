@@ -71,9 +71,9 @@ ALLOWED_APPS: dict[str, str] = {
     "chrome":       "chrome.exe",
     "firefox":      "firefox.exe",
     "edge":         "msedge.exe",
-    "vscode":       "code.exe",
-    "vs code":      "code.exe",
-    "code":         "code.exe",
+    "vscode":       r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
+    "vs code":      r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
+    "code":         r"C:\Users\ASUS\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd",
     "word":         "winword.exe",
     "excel":        "excel.exe",
     "powerpoint":   "powerpnt.exe",
@@ -145,9 +145,11 @@ class AppServer:
             cmd.append(file)
 
         try:
+            # .cmd ve .bat dosyaları shell=True gerektirir
+            use_shell = exe.lower().endswith((".cmd", ".bat"))
             proc = subprocess.Popen(
                 cmd,
-                shell=False,
+                shell=use_shell,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
