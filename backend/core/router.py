@@ -557,11 +557,11 @@ TOOLS_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {
             "type": "function",
             "function": {
                 "name": "web_open",
-                "description": "Belirtilen URL'i varsayılan tarayıcıda açar. YouTube, Google, haber siteleri, herhangi bir web sayfası için kullan.",
+                "description": "Belirtilen web sitesini veya URL'i varsayılan tarayıcıda açar. YouTube, Google, Instagram, GitHub, Reddit vb. popüler siteler için kısa isim yeterlidir.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "url": {"type": "string", "description": "Açılacak web adresi (örn: 'https://youtube.com', 'google.com', 'https://github.com')"}
+                        "url": {"type": "string", "description": "Web adresi veya site adı (örn: 'youtube', 'https://github.com', 'instagram', 'google.com')"}
                     },
                     "required": ["url"],
                 },

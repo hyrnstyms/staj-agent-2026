@@ -25,6 +25,38 @@ from core.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Popüler websiteleri kısa isimden tam URL'e eşler
+KNOWN_WEBSITES: dict[str, str] = {
+    "youtube":       "https://www.youtube.com",
+    "google":        "https://www.google.com",
+    "gmail":         "https://mail.google.com",
+    "github":        "https://www.github.com",
+    "twitter":       "https://www.twitter.com",
+    "x":             "https://www.x.com",
+    "instagram":     "https://www.instagram.com",
+    "linkedin":      "https://www.linkedin.com",
+    "facebook":      "https://www.facebook.com",
+    "reddit":        "https://www.reddit.com",
+    "wikipedia":     "https://www.wikipedia.org",
+    "stackoverflow": "https://stackoverflow.com",
+    "netflix":       "https://www.netflix.com",
+    "spotify":       "https://open.spotify.com",
+    "whatsapp":      "https://web.whatsapp.com",
+    "maps":          "https://maps.google.com",
+    "google maps":   "https://maps.google.com",
+    "drive":         "https://drive.google.com",
+    "google drive":  "https://drive.google.com",
+    "chat gpt":      "https://chatgpt.com",
+    "chatgpt":       "https://chatgpt.com",
+    "openai":        "https://www.openai.com",
+    "twitch":        "https://www.twitch.tv",
+    "discord":       "https://discord.com/app",
+    "amazon":        "https://www.amazon.com.tr",
+    "trendyol":      "https://www.trendyol.com",
+    "n11":           "https://www.n11.com",
+    "hepsiburada":   "https://www.hepsiburada.com",
+}
+
 # Güvenli uygulama whitelist'i — sadece bu uygulamalar açılabilir
 ALLOWED_APPS: dict[str, str] = {
     # Windows uygulamaları
@@ -92,6 +124,10 @@ class AppServer:
 
         exe = self._get_allowed_exe(name)
         if exe is None:
+            # Whitelist'te yoksa — popüler website mi? Web olarak aç
+            normalized = name.strip().lower()
+            if normalized in KNOWN_WEBSITES or "." in normalized:
+                return self.web_open(normalized)
             allowed_list = ", ".join(sorted(ALLOWED_APPS.keys()))
             return {
                 "success": False,
@@ -234,19 +270,27 @@ class AppServer:
             return {"success": False, "error": str(exc)}
     def web_open(self, url: str) -> dict[str, Any]:
         """
-        Belirtilen URL'i varsayılan tarayıcıda açar.
+        Belirtilen URL veya site adını varsayılan tarayıcıda açar.
 
         Args:
-            url: Açılacak web adresi (http:// veya https:// ile başlamalı)
+            url: Web adresi (https://youtube.com) VEYA kısa isim (youtube, google vb.)
 
         Returns:
             {"success": bool, "message": str, "url": str}
         """
-        # Protokol güvenlik kontrolü
-        url = url.strip()
-        if not url.startswith(("http://", "https://")):
-            # Protokol yoksa https ekle
-            url = "https://" + url
+        url = url.strip().strip('"').strip("'")
+
+        # 1. Kısa isim mi? → KNOWN_WEBSITES'ten tam URL'e çevir
+        normalized = url.lower().rstrip("/")
+        if normalized in KNOWN_WEBSITES:
+            url = KNOWN_WEBSITES[normalized]
+        elif not url.startswith(("http://", "https://")):
+            # 2. Protokol eksik ama domain-like (nokta var) → https:// ekle
+            if "." in url:
+                url = "https://" + url
+            else:
+                # 3. Sadece kelime → google'da ara
+                url = f"https://www.google.com/search?q={url.replace(' ', '+')}"
 
         try:
             opened = webbrowser.open(url)
@@ -260,7 +304,7 @@ class AppServer:
             else:
                 return {
                     "success": False,
-                    "error": "Tarayıcı açılamadı. Varsayılan tarayıcı ayarlı olmayabilir.",
+                    "error": "Tarayıcı açılamadı.",
                 }
         except Exception as exc:
             logger.error(f"web_open hatası: {exc}", extra={"url": url})
